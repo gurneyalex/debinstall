@@ -1,0 +1,53 @@
+==================
+debinstall2 design
+==================
+
+Processes and commands
+======================
+
+debinstalld: daemon handling the creation of the actual archive. This
+takes care of the permission problem by having the actual archive
+directory manipulated by a single uid
+
+ldi: userland command used to interact with the daemon. Available
+subcommands:
+
+* ldi create: create new repo, which can be a traditional repo, or a
+  view of an existing repository
+* ldi upload: performs some checks on a package and upload it to the
+  incoming queue of an existing repository
+* ldi publish: process the packages in the incoming queue of a
+  repository and publish them. If the repo is a view of other
+  repositories, publishing will pull packages and their dependencies
+  from these repositories instead of an incoming queue
+* ldi archive: scan an existing repo, find packages which are
+  obsoleted and no longer required by other packages, and offer to
+  remove them
+
+Maybe provide a gui for ldi. 
+
+
+Communication protocol
+======================
+
+Communication is achieved using pyro. 
+
+Files and directories
+=====================
+
+The daemon has a configuration file which is used to configure:
+
+* the directory containing the repositories themselves (e.g. /var/www/debian)
+* the directory containing the repository configuration information
+  (e.g. /var/lib/debinstalld) 
+* The default GnuPG key ID for repository signing
+* user permissions (?)
+
+
+The repository configuration information contains:
+* apt-ftparchive configuration file
+* ...
+
+
+
+
