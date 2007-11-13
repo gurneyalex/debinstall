@@ -1,10 +1,15 @@
+
 import sys
+import os
+import grp
+from ConfigParser import ConfigParser
 from logilab.common import optparser
 
 def run(args=None):
     if args is None:
         args = sys.argv[1:]
-    parser = optparser.OptionParser()
+    usage = """usage: ldi <command> <options> [arguments]"""
+    parser = optparser.OptionParser(usage=usage)
     for cmd in (Create, Upload, Publish, Archive):
         instance = cmd()
         instance.register(parser)
@@ -12,25 +17,21 @@ def run(args=None):
     run(options, args)
 
 class Command:
+    """HELP for --help"""
     name="PROVIDE A NAME"
-    help="PROVIDE SOME HELP"
     opt_specs = []
+    global_options = []
+    min_args = 1
+    max_args = 1
+    arguments = "arg1"
     def __init__(self):
         self.options = None
         self.args = None
         self.repo_name = None
 
     def register(self, option_parser):
-        option_parser.add_command(self.name, (self.run, self.add_options), self.help)
+        option_parser.add_command(self.name, (self.run, self.add_options), self.__doc__ )
 
-    def server(self):
-        if self.server_proxy is None:
-            from Pyro import core, naming
-            core.init_client(banner=0)
-            nameserver =  naming.NameServerLocator().getNS()
-            self.server_proxy = nameserver.resolve(':debinstall2.debinstalld').getProxy()
-        return self.server_proxy
-        
     def run(self, options, args):
         self.options = options
         self.args = args
@@ -40,12 +41,17 @@ class Command:
             self.post_checks()
         except Exception, exc:
             print >>sys.stderr, "%s: %s" % (exc.__class__.__name__, exc)
+            raise
             sys.exit(1)
             
     def add_options(self, option_parser):
-        for short, long, kwargs in self.opt_specs:
+        for short, long, kwargs in self.opt_specs + self.global_options:
             option_parser.add_option(short, long, **kwargs)
-    
+        option_parser.min_args = self.min_args
+        option_parser.max_args = self.max_args
+        option_parser.prog  = "%s %s" % (os.path.basename(sys.argv[0]), self.name)
+        option_parser.usage = "%%prog <options> %s" % (self.arguments)
+
     def pre_checks(self):
         pass
     
@@ -55,9 +61,35 @@ class Command:
     def process(self):
         raise NotImplementedError("This command is not yet available")
 
-class Create(Command):
+class LdiCommand(Command):
+    global_options =  [('-c', '--config',
+                   {'dest': 'configfile',
+                    'default':'/etc/debinstall/debinstallrc',
+                    'help': 'configuration file (default: /etc/debinstall/debinstallrc)'}
+                   ),                  
+                  ]
+    def pre_checks(self):
+        #os.umask(self.get_config_value('umask'))
+        pass
+
+    def get_config_value(self, option):
+        if self.options is None:
+            raise RuntimeError("No configuration file available yet")
+        if not hasattr(self, '_parser'):
+            self._parser = ConfigParser()
+            self._parser.read([self.options.configfile])
+        
+        sections = ['debinstall', self.name]
+        for section in sections:
+            if self._parser.has_section(section):
+                if self._parser.has_option(section, option):
+                    return self._parser.get(section, option)
+        raise ValueError("No option %s in sections %s of %s" % (option, sections, self.options.configfile))
+
+class Create(LdiCommand):
+    """create a new repository"""
     name="create"
-    help="create a new repository."
+    arguments = "repository_name"
     opt_specs = [('-a', '--apt-config',
                 {'dest': "aptconffile",
                  'help': 'apt-ftparchive configuration file for the new repository'}
@@ -71,23 +103,50 @@ class Create(Command):
                 {'action':'append', 'default': [],
                  'help': "a package to extract from a repository into a sub-repository"}
                 ),
-               ]
+               ] 
 
-    
+    def _ensure_directories(self, directories):
+        for dirname in directories:
+            if not os.path.isdir(dirname):
+                os.makedirs(dirname)
+
+    def _set_permissions(self, path, uid, gid, mod):
+        try:
+            os.chown(path, uid, gid)
+            os.chmod(path, mod)
+        except OSError, exc:
+            raise RuntimeError('Failed to set permissions on %s: %s' % (path, exc))
+
+    def _ensure_permissions(self, directories):
+        gid= grp.getgrnam(self.get_config_value('group')).gr_gid
+        uid = os.getuid()
+        for dirname in directories:
+            self._set_permissions(dirname, uid, gid, 00775)
+            for dirpath, dirnames, filenames in os.walk(dirname):
+                for subdir in dirnames:
+                    subdir = os.path.join(dirpath, subdir)
+                    self._set_permissions(subdir, uid, gid, 00775)
+                for filename in filenames:
+                    filename = os.path.join(dirpath, file)
+                    self._set_permissions(filename, uid, gid, 00775)
+
     def pre_checks(self):
-        assert len(self.args) == 1, "A single repository name must be provided"
+        LdiCommand.pre_checks(self)
         self.repo_name = self.args[0]
-    
+        directories = [self.get_config_value(confkey) for confkey in ('destination', 'configurations')]
+        self._ensure_directories(directories)
+        self._ensure_permissions(directories)
+        
     def post_checks(self):
-        pass
+        self._ensure_permissions(directories)
     
     def process(self):
-        raise NotImplementedError("This command is not yet available")
-
-class Upload(Command):
+        pass
+class Upload(LdiCommand):
+    """upload a new package to the incoming queue of a repository"""
     name="upload"
-    help="upload a new package to the incoming queue of a repository"
-    
+    max_args = sys.maxint
+    arguments = "package.changes [...]"
     def pre_checks(self):
         pass
     
@@ -97,10 +156,12 @@ class Upload(Command):
     def process(self):
         raise NotImplementedError("This command is not yet available")
     
-class Publish(Command):
+class Publish(LdiCommand):
+    """process the incoming queue of a repository"""
     name="publish"
-    help="process the incoming queue of a repository"
-    
+    min_args = 0
+    max_args = sys.maxint
+    argument = "[source_package...]"
     def pre_checks(self):
         pass
     
@@ -110,9 +171,9 @@ class Publish(Command):
     def process(self):
         raise NotImplementedError("This command is not yet available")
     
-class Archive(Command):
+class Archive(LdiCommand):
+    """cleanup a repository by moving old unused packages to an archive directory"""
     name="archive"
-    help="cleanup a repository by moving old unused packages to an archive directory"
 
     def pre_checks(self):
         pass
@@ -125,5 +186,3 @@ class Archive(Command):
     
 
 
-class ArgumentError(Exception):
-    """missing or wrong argument"""
