@@ -2,14 +2,10 @@
 debinstall2 design
 ==================
 
-Processes and commands
-======================
+Command
+=======
 
-debinstalld: daemon handling the creation of the actual archive. This
-takes care of the permission problem by having the actual archive
-directory manipulated by a single uid
-
-ldi: userland command used to interact with the daemon. Available
+ldi: used to manipulate repositories. Available
 subcommands:
 
 * ldi create: create new repo, which can be a traditional repo, or a
@@ -27,22 +23,17 @@ subcommands:
 Maybe provide a gui for ldi. 
 
 
-Communication protocol
-======================
 
-Communication is achieved using pyro. 
 
 Files and directories
 =====================
 
-The daemon has a configuration file which is used to configure:
-
+The command has a configuration file stating:
 * the directory containing the repositories themselves (e.g. /var/www/debian)
 * the directory containing the repository configuration information
   (e.g. /var/lib/debinstalld) 
 * The default GnuPG key ID for repository signing
-* user permissions (?)
-
+* 
 
 The repository configuration information contains:
 * apt-ftparchive configuration file
@@ -50,4 +41,9 @@ The repository configuration information contains:
 
 
 
+Cautions
+========
 
+Deal properly with file permissions (use chmod, umask and chown to
+ensure the group has write access to the various files, ensuring that
+the next user will be able to use the command)
