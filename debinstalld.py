@@ -11,7 +11,7 @@ DEFAULT_CONFIG = {'repos_dir':'/tmp/debinstall',
 
 class Debinstaller:
     def __init__(self, config=None):
-        if config is None:
+        if config is None:        
             config = DEFAULT_CONFIG
         self.config = config
         self._ensure_directories()
@@ -19,9 +19,12 @@ class Debinstaller:
     def _ensure_directories(self):
         for confkey in self.config:
             if confkey.endswith('_dir'):
-                os.makedirs(self.config[confkey])
+                dirname = self.config[confkey]
+                if not os.path.isdir(dirname):
+                    os.makedirs(dirname)
 
     def list_repos(self):
+        print "tralala"
         return os.listdir(self.config['configs_dir'])
 
 class Daemon:
@@ -30,7 +33,10 @@ class Daemon:
         self.appid = 'debinstalld'
         self.delegate = Debinstaller()
         daemon = self.pyro_register()
-        daemon.requestLoop()
+        try:
+            daemon.requestLoop()
+        finally:
+            daemon.shutdown(True)
         
     def pyro_register(self, host=None):
         """register the repository as a pyro object"""
@@ -44,14 +50,13 @@ class Daemon:
         daemon.connect(impl, self.appid)
         msg = 'debinstalld registered as a pyro object using group %s and id %s'
         print msg % (self.nsgroup, self.appid)
-        atexit.register(pyro_unregister, self.nsgroup, self.appid)
         return daemon
     
     
     def pyro_nameserver(self, host=None, group=None):
         """locate and bind the the name server to the daemon"""
         # locate the name server
-        nameserver = naming.NameServerLocator().getNS(host)
+        nameserver = naming.NameServerLocator().getNS()
         if group is not None:
             # make sure our namespace group exists
             try:
