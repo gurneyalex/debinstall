@@ -14,7 +14,7 @@ def run(args=None):
         instance = cmd()
         instance.register(parser)
     run, options, args = parser.parse_command(args)
-    run(options, args)
+    run(options, args, parser)
 
 class Command:
     """HELP for --help"""
@@ -32,11 +32,11 @@ class Command:
     def register(self, option_parser):
         option_parser.add_command(self.name, (self.run, self.add_options), self.__doc__ )
 
-    def run(self, options, args):
+    def run(self, options, args, option_parser):
         self.options = options
         self.args = args
         try:
-            self.pre_checks()
+            self.pre_checks(option_parser)
             self.process()
             self.post_checks()
         except Exception, exc:
@@ -52,7 +52,7 @@ class Command:
         option_parser.prog  = "%s %s" % (os.path.basename(sys.argv[0]), self.name)
         option_parser.usage = "%%prog <options> %s" % (self.arguments)
 
-    def pre_checks(self):
+    def pre_checks(self, option_parser):
         pass
     
     def post_checks(self):
@@ -68,7 +68,7 @@ class LdiCommand(Command):
                     'help': 'configuration file (default: /etc/debinstall/debinstallrc)'}
                    ),                  
                   ]
-    def pre_checks(self):
+    def pre_checks(self, option_parser):
         #os.umask(self.get_config_value('umask'))
         pass
 
@@ -130,10 +130,14 @@ class Create(LdiCommand):
                     filename = os.path.join(dirpath, file)
                     self._set_permissions(filename, uid, gid, 00775)
 
-    def pre_checks(self):
-        LdiCommand.pre_checks(self)
+    def pre_checks(self, option_parser):
+        if self.options.aptconffile is None:
+            option_parser.error('You must provide an apt.conf file')
+        LdiCommand.pre_checks(self, option_parser)
+        if self.options.aptconffile is None:
+            raise 
         self.repo_name = self.args[0]
-        directories = [self.get_config_value(confkey) for confkey in ('destination', 'configurations')]
+        directories = [self.get_config_value(confkey) for confkey in ('destination', 'configurations', 'archivedir')]
         self._ensure_directories(directories)
         self._ensure_permissions(directories)
         
@@ -141,13 +145,26 @@ class Create(LdiCommand):
         self._ensure_permissions(directories)
     
     def process(self):
-        pass
+        dest_base_dir = self.get_config_value("destination")
+        conf_base_dir = self.get_config_value('configurations')
+        repo_name = self.args[0]
+        dest_dir = os.path.join(dest_base_dir, repo_name)
+        conf_dest_dir = os.path.join(conf_base_dir, repo_name)
+        if os.path.isdir(dest_dir) or os.path.isdir(conf_dest_dir):
+            raise ValueError('A repository with that name already exists.')
+
+        os.mkdir(conf_dest_dir)
+        os.mkdir(dest_dir)
+
+        
+        self._ensure_permissions([conf_dest_dir, dest_dir])
+        
 class Upload(LdiCommand):
     """upload a new package to the incoming queue of a repository"""
     name="upload"
     max_args = sys.maxint
     arguments = "package.changes [...]"
-    def pre_checks(self):
+    def pre_checks(self, option_parser):
         pass
     
     def post_checks(self):
@@ -162,7 +179,7 @@ class Publish(LdiCommand):
     min_args = 0
     max_args = sys.maxint
     argument = "[source_package...]"
-    def pre_checks(self):
+    def pre_checks(self, option_parser):
         pass
     
     def post_checks(self):
@@ -175,7 +192,7 @@ class Archive(LdiCommand):
     """cleanup a repository by moving old unused packages to an archive directory"""
     name="archive"
 
-    def pre_checks(self):
+    def pre_checks(self, option_parser):
         pass
 
     def post_checks(self):
@@ -185,4 +202,9 @@ class Archive(LdiCommand):
         raise NotImplementedError("This command is not yet available")
     
 
+class Destroy(LdiCommand):
+    """completely remove a repository, its packages and the configuration files"""
+    name = 'destroy'
 
+    def process(self):
+        raise NotImplementedError("This command is not yet available")
