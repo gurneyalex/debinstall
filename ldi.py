@@ -1,9 +1,10 @@
 
 import sys
 import os
+import os.path as osp
 from logilab.common import optparser
 
-from debinstall2.command import LdiCommand
+from debinstall2.command import LdiCommand, CommandError
 from debinstall2 import shelltools as sht
 
 def run(args=None):
@@ -29,10 +30,13 @@ class Create(LdiCommand):
                ('-s', '--source-repo',
                 {'action':'append',
                  'default': [],
+                 'dest': 'source_repositories',
                  'help': "the original repository from which a sub-repository should be created"}
                 ),
                ('-p', '--package',
-                {'action':'append', 'default': [],
+                {'action':'append',
+                 'default': [],
+                 'dest': 'packages',
                  'help': "a package to extract from a repository into a sub-repository"}
                 ),
                ] 
@@ -44,7 +48,6 @@ class Create(LdiCommand):
         directories = [self.get_config_value(confkey) for confkey in ('destination', 'configurations')]
         sht.ensure_directories(directories)
         sht.ensure_permissions(directories, self.group, 0775, 0664)
-            
                 
     def post_checks(self):
         directories = [self.get_config_value(confkey) for confkey in ('destination', 'configurations')]
@@ -54,24 +57,33 @@ class Create(LdiCommand):
         dest_base_dir = self.get_config_value("destination")
         conf_base_dir = self.get_config_value('configurations')
         repo_name = self.args[0]
-        dest_dir = os.path.join(dest_base_dir, repo_name)
-        conf_dest_dir = os.path.join(conf_base_dir, repo_name)
-        if os.path.isdir(dest_dir) or os.path.isdir(conf_dest_dir):
-            raise ValueError('A repository with that name already exists.')
+        dest_dir = osp.join(dest_base_dir, repo_name)
+        aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repo_name)
+        ldiconf = osp.join(conf_base_dir, '%s-ldi.conf' % repo_name)
+        if osp.isdir(dest_dir) or osp.isfile(aptconf) or osp.isfile(ldiconf):
+            raise CommandError('A repository with that name already exists.')
 
-        sht.mkdir(conf_dest_dir, self.group, 0775)
+        if self.options.source_repositories:
+            if not self.options.packages:
+                raise CommandError('No packages to extract from the source repositories')
+        if self.options.packages:
+            if not self.options.source_repositories:
+                raise CommandError('No source repositories from which packages should be extracted')
+        
+
         sht.mkdir(dest_dir, self.group, 0775)
-
-        dstconf = os.path.join(conf_dest_dir, 'apt.conf')
+        sht.mkdir(osp.join(dest_dir, 'debian'), self.group, 0775)
+        sht.mkdir(osp.join(dest_dir, 'incoming'), self.group, 0775)
         if self.options.aptconffile is not None:
-            sht.copy(self.options.aptconffile, dstconf)
+            sht.copy(self.options.aptconffile, aptconf)
         else:
             import aptconffile
-            aptconffile.writeconf(dstconf, self.group, 0664)
+            aptconffile.writeconf(aptconf, self.group, 0664)
+        import ldiconffile
+        ldiconffile.writeconf(ldiconf, self.group, 0664,
+                              self.options.source_repositories,
+                              self.options.packages)
 
-        # XXXFIXME: handle creation of sub repos
-        # use ldi.conf as filename in configs
-        
 class Upload(LdiCommand):
     """upload a new package to the incoming queue of a repository"""
     name="upload"

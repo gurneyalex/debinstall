@@ -30,9 +30,8 @@ class Command(object):
             self.pre_checks(option_parser)
             self.process()
             self.post_checks()
-        except Exception, exc:
-            print >>sys.stderr, "%s: %s" % (exc.__class__.__name__, exc)
-            raise
+        except CommandError, exc:
+            print >>sys.stderr, str(exc)
             sys.exit(1)
             
     def add_options(self, option_parser):
@@ -78,9 +77,12 @@ class LdiCommand(Command):
             if self._parser.has_section(section):
                 if self._parser.has_option(section, option):
                     return self._parser.get(section, option)
-        raise ValueError("No option %s in sections %s of %s" % (option, sections, self.options.configfile))
+        raise CommandError("No option %s in sections %s of %s" % (option, sections, self.options.configfile))
 
     @property
     def group(self):
         return self.get_config_value('group')
     
+
+class CommandError(Exception):
+    """raised to exit the program without a traceback"""

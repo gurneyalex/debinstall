@@ -100,10 +100,67 @@ class LdiCreate_TC(TestCase, CommandLineTester):
         status, output, error = self.run_command(command)
         self.assertEquals(status, 0, error)
         base_dir = osp.join(TESTDIR, 'data', 'acceptance')
-        self.failUnless(osp.isdir(osp.join(base_dir, 'repositories', 'my_repo')))
+
+        repodir = osp.join(base_dir, 'repositories', 'my_repo')
+        debian = osp.join(repodir, 'debian')
+        incoming = osp.join(repodir, 'incoming')
+        self.failUnless(osp.isdir(repodir), 'repo dir not created')
+        self.failUnless(osp.isdir(debian), 'debian dir not created')
+        self.failUnless(osp.isdir(incoming), 'incoming dir not created')
+        aptconf = osp.join(base_dir, 'configurations', 'my_repo-apt.conf')
+        self.failUnless(osp.isfile(aptconf), 'apt.conf file not created')
+        ldiconf = osp.join(base_dir, 'configurations', 'my_repo-ldi.conf')
+        self.failUnless(osp.isfile(ldiconf), 'ldi.conf file not created')
+        f = open(ldiconf)
+        config = f.read()
+        f.close()
+        expected = '''\
+[subrepository]
+sources=
+packages=
+'''
+        self.assertEquals(config, expected, 'incorrect ldi.conf written')
+
+        
+    def test_no_double_creation(self):
+        config = write_config('debinstallrc_acceptance')
+        command = ['ldi', 'create', '-c', config, 'my_repo']
+        status, output, error = self.run_command(command)
+        self.assertEquals(status, 0, error)
+        status, output, error = self.run_command(command)
+        self.failIfEqual(status, 0)
 
 
+    def test_subrepo_creation(self):
+        config = write_config('debinstallrc_acceptance')
+        command = ['ldi', 'create', '-c', config, '-s', 'repo1', '-s', 'repo2', '-p', 'package1', '-p', 'package2', 'my_repo']
+        status, output, error = self.run_command(command)
+        self.assertEquals(status, 0, error)
+        base_dir = osp.join(TESTDIR, 'data', 'acceptance')
+        ldiconf = osp.join(base_dir, 'configurations', 'my_repo-ldi.conf')
+        f = open(ldiconf)
+        config = f.read()
+        f.close()
+        expected = '''\
+[subrepository]
+sources=repo1, repo2
+packages=package1, package2
+'''
+        self.assertEquals(config, expected, 'incorrect ldi.conf written')
 
+
+    def test_source_without_package(self):
+        config = write_config('debinstallrc_acceptance')
+        command = ['ldi', 'create', '-c', config, '-s', 'repo1', 'my_repo']
+        status, output, error = self.run_command(command)
+        self.failIfEqual(status, 0)
+        
+    def test_package_without_source(self):
+        config = write_config('debinstallrc_acceptance')
+        command = ['ldi', 'create', '-c', config, '-p', 'package1', 'my_repo']
+        status, output, error = self.run_command(command)
+        self.failIfEqual(status, 0)
+        
 class TestFramework_TC(TestCase, CommandLineTester):
     """tests for the helper functions of this test module."""
     def setUp(self):
