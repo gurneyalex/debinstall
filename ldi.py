@@ -1,9 +1,10 @@
 
 import sys
 import os
-import grp
-from ConfigParser import ConfigParser
 from logilab.common import optparser
+
+from debinstall2.command import LdiCommand
+from debinstall2 import shelltools as sht
 
 def run(args=None):
     if args is None:
@@ -16,75 +17,6 @@ def run(args=None):
     run, options, args = parser.parse_command(args)
     run(options, args, parser)
 
-class Command:
-    """HELP for --help"""
-    name="PROVIDE A NAME"
-    opt_specs = []
-    global_options = []
-    min_args = 1
-    max_args = 1
-    arguments = "arg1"
-    def __init__(self):
-        self.options = None
-        self.args = None
-        self.repo_name = None
-
-    def register(self, option_parser):
-        option_parser.add_command(self.name, (self.run, self.add_options), self.__doc__ )
-
-    def run(self, options, args, option_parser):
-        self.options = options
-        self.args = args
-        try:
-            self.pre_checks(option_parser)
-            self.process()
-            self.post_checks()
-        except Exception, exc:
-            print >>sys.stderr, "%s: %s" % (exc.__class__.__name__, exc)
-            raise
-            sys.exit(1)
-            
-    def add_options(self, option_parser):
-        for short, long, kwargs in self.opt_specs + self.global_options:
-            option_parser.add_option(short, long, **kwargs)
-        option_parser.min_args = self.min_args
-        option_parser.max_args = self.max_args
-        option_parser.prog  = "%s %s" % (os.path.basename(sys.argv[0]), self.name)
-        option_parser.usage = "%%prog <options> %s" % (self.arguments)
-
-    def pre_checks(self, option_parser):
-        pass
-    
-    def post_checks(self):
-        pass
-    
-    def process(self):
-        raise NotImplementedError("This command is not yet available")
-
-class LdiCommand(Command):
-    global_options =  [('-c', '--config',
-                   {'dest': 'configfile',
-                    'default':'/etc/debinstall/debinstallrc',
-                    'help': 'configuration file (default: /etc/debinstall/debinstallrc)'}
-                   ),                  
-                  ]
-    def pre_checks(self, option_parser):
-        #os.umask(self.get_config_value('umask'))
-        pass
-
-    def get_config_value(self, option):
-        if self.options is None:
-            raise RuntimeError("No configuration file available yet")
-        if not hasattr(self, '_parser'):
-            self._parser = ConfigParser()
-            self._parser.read([self.options.configfile])
-        
-        sections = ['debinstall', self.name]
-        for section in sections:
-            if self._parser.has_section(section):
-                if self._parser.has_option(section, option):
-                    return self._parser.get(section, option)
-        raise ValueError("No option %s in sections %s of %s" % (option, sections, self.options.configfile))
 
 class Create(LdiCommand):
     """create a new repository"""
@@ -105,44 +37,18 @@ class Create(LdiCommand):
                 ),
                ] 
 
-    def _ensure_directories(self, directories):
-        for dirname in directories:
-            if not os.path.isdir(dirname):
-                os.makedirs(dirname)
-
-    def _set_permissions(self, path, uid, gid, mod):
-        try:
-            os.chown(path, uid, gid)
-            os.chmod(path, mod)
-        except OSError, exc:
-            raise RuntimeError('Failed to set permissions on %s: %s' % (path, exc))
-
-    def _ensure_permissions(self, directories):
-        gid= grp.getgrnam(self.get_config_value('group')).gr_gid
-        uid = os.getuid()
-        for dirname in directories:
-            self._set_permissions(dirname, uid, gid, 00775)
-            for dirpath, dirnames, filenames in os.walk(dirname):
-                for subdir in dirnames:
-                    subdir = os.path.join(dirpath, subdir)
-                    self._set_permissions(subdir, uid, gid, 00775)
-                for filename in filenames:
-                    filename = os.path.join(dirpath, file)
-                    self._set_permissions(filename, uid, gid, 00775)
 
     def pre_checks(self, option_parser):
-        if self.options.aptconffile is None:
-            option_parser.error('You must provide an apt.conf file')
         LdiCommand.pre_checks(self, option_parser)
-        if self.options.aptconffile is None:
-            raise 
         self.repo_name = self.args[0]
-        directories = [self.get_config_value(confkey) for confkey in ('destination', 'configurations', 'archivedir')]
-        self._ensure_directories(directories)
-        self._ensure_permissions(directories)
-        
+        directories = [self.get_config_value(confkey) for confkey in ('destination', 'configurations')]
+        sht.ensure_directories(directories)
+        sht.ensure_permissions(directories, self.group, 0775, 0664)
+            
+                
     def post_checks(self):
-        self._ensure_permissions(directories)
+        directories = [self.get_config_value(confkey) for confkey in ('destination', 'configurations')]
+        sht.ensure_permissions(directories, self.group, 0775, 0664)
     
     def process(self):
         dest_base_dir = self.get_config_value("destination")
@@ -153,11 +59,18 @@ class Create(LdiCommand):
         if os.path.isdir(dest_dir) or os.path.isdir(conf_dest_dir):
             raise ValueError('A repository with that name already exists.')
 
-        os.mkdir(conf_dest_dir)
-        os.mkdir(dest_dir)
+        sht.mkdir(conf_dest_dir, self.group, 0775)
+        sht.mkdir(dest_dir, self.group, 0775)
 
-        
-        self._ensure_permissions([conf_dest_dir, dest_dir])
+        dstconf = os.path.join(conf_dest_dir, 'apt.conf')
+        if self.options.aptconffile is not None:
+            sht.copy(self.options.aptconffile, dstconf)
+        else:
+            import aptconffile
+            aptconffile.writeconf(dstconf, self.group, 0664)
+
+        # XXXFIXME: handle creation of sub repos
+        # use ldi.conf as filename in configs
         
 class Upload(LdiCommand):
     """upload a new package to the incoming queue of a repository"""
