@@ -1,4 +1,12 @@
-DEFAULT_APTCONF = '''\
+import debinstall2.shelltools as sht
+
+def writeconf(dest, group, perms):
+    f = open(dest, "w")
+    f.write(APTDEFAULT_APTCONF)
+    f.close()
+    sht.set_permissions(dest, -1, group, perms)
+
+APTDEFAULT_APTCONF = '''\
 // This config is for use with the pool-structure for the packages, thus we
 // don't use a Tree Section in here
 
@@ -47,3 +55,4 @@ Default {
 
 
 '''
+
