@@ -6,6 +6,7 @@ import shutil
 
 def set_permissions(path, uid, gid, mod):
     """set owner and permissions on path
+    
     uid and gid and numeric user and group ids (gid can also be a group name)
     mod is the permission as an integer"""
     gid = getgid(gid)
@@ -16,7 +17,9 @@ def set_permissions(path, uid, gid, mod):
         raise RuntimeError('Failed to set permissions on %s: %s' % (path, exc))
 
 def ensure_permissions(directories, group, dirperm, fileperm):
-    """recursively set the group and permissions to all files and directories in the directories list
+    """recursively set the group and permissions to all files and
+    directories in the directories list
+    
     group is a group name or a group id
     dirperm is the permissions to use for directories
     fileperm is the permissions to use for files"""
@@ -44,6 +47,11 @@ def ensure_directories(directories):
             os.makedirs(dirname)
 
 def getgid(group):
+    """return the group id for group.
+    
+    group can be a group name or or a goup id (in which case it is
+    returned unchanged)
+    """
     if type(group) is str:
         gid = grp.getgrnam(group).gr_gid
     else:
@@ -51,13 +59,14 @@ def getgid(group):
     return gid
 
 def copy(source, dest, group, perms):
-    gid = getgid(group)
+    """copy source to dest using shutil.copy and set the permissions"""
     shutil.copy(source, dest)
     set_permissions(dest, -1, group, perms)
         
 
 
 def mkdir(path, group, perms):
+    """create a directory with the specified permissions"""
     gid = getgid(group)
     os.mkdir(path)
     set_permissions(path, -1, gid, perms)

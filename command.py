@@ -4,12 +4,10 @@ import sys
 import os
 from ConfigParser import ConfigParser
 
-from logilab.common import optparser
-
 
 class Command(object):
     """HELP for --help"""
-    name="PROVIDE A NAME"
+    name = "PROVIDE A NAME"
     opt_specs = []
     global_options = []
     min_args = 1
@@ -21,7 +19,9 @@ class Command(object):
         self.repo_name = None
 
     def register(self, option_parser):
-        option_parser.add_command(self.name, (self.run, self.add_options), self.__doc__ )
+        option_parser.add_command(self.name,
+                                  (self.run, self.add_options),
+                                  self.__doc__ )
 
     def run(self, options, args, option_parser):
         self.options = options
@@ -31,7 +31,7 @@ class Command(object):
             self.process()
             self.post_checks()
         except CommandError, exc:
-            print >>sys.stderr, str(exc)
+            print >> sys.stderr, str(exc)
             sys.exit(1)
             
     def add_options(self, option_parser):
@@ -39,7 +39,8 @@ class Command(object):
             option_parser.add_option(short, long, **kwargs)
         option_parser.min_args = self.min_args
         option_parser.max_args = self.max_args
-        option_parser.prog  = "%s %s" % (os.path.basename(sys.argv[0]), self.name)
+        option_parser.prog  = "%s %s" % (os.path.basename(sys.argv[0]),
+                                         self.name)
         option_parser.usage = "%%prog <options> %s" % (self.arguments)
 
     def pre_checks(self, option_parser):
@@ -54,12 +55,13 @@ class Command(object):
 class LdiCommand(Command):
     """provide command HELP here, on a single line"""
     
-    global_options =  [('-c', '--config',
-                   {'dest': 'configfile',
-                    'default':'/etc/debinstall/debinstallrc',
-                    'help': 'configuration file (default: /etc/debinstall/debinstallrc)'}
-                   ),                  
-                  ]
+    global_options = [
+        ('-c', '--config',
+         {'dest': 'configfile',
+          'default':'/etc/debinstall/debinstallrc',
+          'help': 'configuration file (default: /etc/debinstall/debinstallrc)'}
+         ),                  
+        ]
     def pre_checks(self, option_parser):
         #os.umask(self.get_config_value('umask'))
         pass
@@ -72,12 +74,16 @@ class LdiCommand(Command):
             self._parser = ConfigParser()
             self._parser.read([self.options.configfile])
 
-        sections = ['debinstall', self.name, 'create', 'upload', 'publish', 'archive']
+        sections = ['debinstall',
+                    self.name,
+                    'create', 'upload', 'publish', 'archive']
         for section in sections:
             if self._parser.has_section(section):
                 if self._parser.has_option(section, option):
                     return self._parser.get(section, option)
-        raise CommandError("No option %s in sections %s of %s" % (option, sections, self.options.configfile))
+        message = "No option %s in sections %s of %s" % (option, sections,
+                                                        self.options.configfile)
+        raise CommandError(message)
 
     @property
     def group(self):
