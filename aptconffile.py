@@ -1,9 +1,11 @@
+"""apt.conf file manipulation"""
 import debinstall2.shelltools as sht
 
 def writeconf(dest, group, perms):
-    f = open(dest, "w")
-    f.write(APTDEFAULT_APTCONF)
-    f.close()
+    """write a configuration file for use by apt-ftparchive"""
+    fdesc = open(dest, "w")
+    fdesc.write(APTDEFAULT_APTCONF)
+    fdesc.close()
     sht.set_permissions(dest, -1, group, perms)
 
 APTDEFAULT_APTCONF = '''\
