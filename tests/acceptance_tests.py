@@ -116,6 +116,11 @@ class LdiUpload_TC(TestCase, CommandLineTester):
                     ]
         self.assertSetEqual(uploaded, expected)
 
+    def test_upload_unsigned_changes(self):
+        changesfile = osp.join(TESTDIR, 'packages', 'unsigned_package', 'package1_1.0-1_i386.changes')
+        command = ['ldi', 'upload', '-c', self.config, 'my_repo', changesfile]
+        status, output, error = self.run_command(command)
+        self.assertEqual(status, 1, error)
         
 
 class LdiCreate_TC(TestCase, CommandLineTester):

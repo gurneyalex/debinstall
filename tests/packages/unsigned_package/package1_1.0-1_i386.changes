@@ -1,0 +1,22 @@
+Format: 1.7
+Date: Sun, 25 Nov 2007 21:15:00 +0100
+Source: package1
+Binary: package1
+Architecture: source all
+Version: 1.0-1
+Distribution: unstable
+Urgency: low
+Maintainer: Alexandre Fayolle <alexandre.fayolle@logilab.fr>
+Changed-By: Alexandre Fayolle <alexandre.fayolle@logilab.fr>
+Description: 
+ package1   - dummy package to test debinstall
+Closes: 5555
+Changes: 
+ package1 (1.0-1) unstable; urgency=low
+ .
+   * Initial release (Closes: #5555)
+Files: 
+ 07ceabf85caa343145d542e15ecc3dfd 330 misc extra package1_1.0-1.dsc
+ d6195965d8ec7d145002eb45e15c0245 188 misc extra package1_1.0.orig.tar.gz
+ 0a5e3fc5e7717ebf4a617899982483bc 1278 misc extra package1_1.0-1.diff.gz
+ a6e78da5c1ddc9eac4b7ff6340466f8c 1854 misc extra package1_1.0-1_all.deb

@@ -1,4 +1,4 @@
-
+"""The ldi command provides access to various subcommands to manipulate debian packages and repositories"""
 import sys
 import os
 import os.path as osp
@@ -8,6 +8,7 @@ from debian_bundle.deb822 import Changes
 
 from debinstall2.command import LdiCommand, CommandError
 from debinstall2 import shelltools as sht
+from debinstall2.signature import check_sig
 
 def run(args=None):
     if args is None:
@@ -23,7 +24,7 @@ def run(args=None):
 
 class Create(LdiCommand):
     """create a new repository"""
-    name="create"
+    name = "create"
     arguments = "repository_name"
     opt_specs = [('-a', '--apt-config',
                 {'dest': "aptconffile",
@@ -88,26 +89,51 @@ class Create(LdiCommand):
 
 class Upload(LdiCommand):
     """upload a new package to the incoming queue of a repository"""
-    name="upload"
+    name = "upload"
     min_args = 2
     max_args = sys.maxint
     arguments = "repository package.changes [...]"
 
+
     def _get_all_package_files(self, changes_files):
         file_list = []
         for filename in changes_files:
-            input = open(filename)
+            fdesc = open(filename)
             dirname = osp.dirname(filename)
-            changes = Changes(input)
+            changes = Changes(fdesc)
             file_list.append(filename)
             for info in changes['Files']:
                 file_list.append(osp.join(dirname, info['name']))
-            input.close()
+            fdesc.close()
         return file_list
+
+
+
+    def _check_signatures(self, changes_files):
+        """return True if the changes files and appropriate dsc files are correctly signed.
+        raise CommandError otherwise.
+        """
+        failed = []
+        for filename in changes_files:
+            if not check_sig(filename):
+                failed.append(filename)
+            fdesc = open(filename)
+            dirname = osp.dirname(filename)
+            changes = Changes(fdesc)
+            for info in changes['Files']:
+                if info['name'].endswith('.dsc'):
+                    dscfile = osp.join(dirname, info['name'])
+                    if not check_sig(dscfile):
+                        failed.append(dscfile)
+                        break
+        if failed:
+            raise CommandError('The following files are not signed:\n' + '\n'.join(failed))
+        return True
     
     def process(self):
         repository = self.args[0]
         changes_files = self.args[1:]
+        self._check_signatures(changes_files)
         all_files = self._get_all_package_files(changes_files)
         destdir = osp.join(self.get_config_value('destination'), repository, 'incoming')
         for filename in all_files:
@@ -116,7 +142,7 @@ class Upload(LdiCommand):
         
 class Publish(LdiCommand):
     """process the incoming queue of a repository"""
-    name="publish"
+    name = "publish"
     min_args = 0
     max_args = sys.maxint
     argument = "[source_package...]"
@@ -131,7 +157,7 @@ class Publish(LdiCommand):
     
 class Archive(LdiCommand):
     """cleanup a repository by moving old unused packages to an archive directory"""
-    name="archive"
+    name = "archive"
 
     def pre_checks(self, option_parser):
         pass
