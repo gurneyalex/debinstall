@@ -52,7 +52,7 @@ def getgid(group):
 
 def copy(source, dest, group, perms):
     gid = getgid(group)
-    shutil.copyfile(source, dest)
+    shutil.copy(source, dest)
     set_permissions(dest, -1, group, perms)
         
 
