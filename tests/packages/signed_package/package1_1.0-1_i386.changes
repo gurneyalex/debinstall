@@ -1,0 +1,37 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.7
+Date: Sun, 25 Nov 2007 21:15:00 +0100
+Source: package1
+Binary: package1
+Architecture: source all
+Version: 1.0-1
+Distribution: unstable
+Urgency: low
+Maintainer: Alexandre Fayolle <alexandre.fayolle@logilab.fr>
+Changed-By: Alexandre Fayolle <alexandre.fayolle@logilab.fr>
+Description: 
+ package1   - dummy package to test debinstall
+Closes: 5555
+Changes: 
+ package1 (1.0-1) unstable; urgency=low
+ .
+   * Initial release (Closes: #5555)
+Files: 
+ b1d035634c5c3ed512a63daf1d5a1b7c 859 misc extra package1_1.0-1.dsc
+ d6195965d8ec7d145002eb45e15c0245 188 misc extra package1_1.0.orig.tar.gz
+ 0a5e3fc5e7717ebf4a617899982483bc 1278 misc extra package1_1.0-1.diff.gz
+ a6e78da5c1ddc9eac4b7ff6340466f8c 1854 misc extra package1_1.0-1_all.deb
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.6 (GNU/Linux)
+
+iQEVAwUBR0naKl6T+PKoJ87eAQIqLgf/ZO9JSEzMHxElqg8t5unY+BO6PVpnPYp4
+cVht0GKEggEGX4yeKOWjx7xk+U+JjZoLUE2PRqT7iydc0hIuye0kf79HU1JkC+/C
+/ucv0NedGOpPJBLNomb68p50yJqLuuqpEFAnecMYiq5T/h+P3P+8PHlc/6ac7obZ
+t+MEtVi14jxrtlzeaXZWViLHtfZCg9W+CC3V27xEBx0klw/D9IbJ5YQMRYwcVLmp
+4VaHSsEqSDioevjuCDLnOgkrKaAPcPc+zD+mh/4dOSgqJuzxvAjMOOg9ac2SJhGp
+ra4tY3gY+oYTpzLP5YWU8cksqseBxlG7drFHGh2zLuElpaldePfv3Q==
+=H+op
+-----END PGP SIGNATURE-----

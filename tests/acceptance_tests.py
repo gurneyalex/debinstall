@@ -82,7 +82,41 @@ def cleanup_config(filename):
     filename = osp.join(TESTDIR, 'data', filename)
     if osp.isfile(filename):
         os.remove(filename)
-    
+
+
+class LdiUpload_TC(TestCase, CommandLineTester):
+    def setUp(self):
+        self.tearDown()
+        
+        self.config = write_config('debinstallrc_acceptance')
+        command = ['ldi', 'create', '-c', self.config, 'my_repo']
+        self.run_command(command)
+        
+    def tearDown(self):
+        dirname = osp.join(TESTDIR, 'data', 'acceptance')
+        if osp.exists(dirname):
+            shutil.rmtree(dirname)
+        cleanup_config('debinstallrc_acceptance')
+
+
+    def test_upload_normal_changes(self):
+        changesfile = osp.join(TESTDIR, 'packages', 'signed_package', 'package1_1.0-1_i386.changes')
+        command = ['ldi', 'upload', '-c', self.config, 'my_repo', changesfile]
+        status, output, error = self.run_command(command)
+        self.assertEqual(status, 0, error)
+        base_dir = osp.join(TESTDIR, 'data', 'acceptance')
+        repodir = osp.join(base_dir, 'repositories', 'my_repo')
+        incoming = osp.join(repodir, 'incoming')
+        uploaded = os.listdir(incoming)
+        expected = ['package1_1.0-1_all.deb',
+                    'package1_1.0-1.diff.gz',
+                    'package1_1.0-1.dsc',
+                    'package1_1.0-1_i386.changes',
+                    'package1_1.0.orig.tar.gz',
+                    ]
+        self.assertSetEqual(uploaded, expected)
+
+        
 
 class LdiCreate_TC(TestCase, CommandLineTester):
     def setUp(self):

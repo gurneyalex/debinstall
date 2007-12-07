@@ -2,7 +2,9 @@
 import sys
 import os
 import os.path as osp
+
 from logilab.common import optparser
+from debian_bundle.deb822 import Changes
 
 from debinstall2.command import LdiCommand, CommandError
 from debinstall2 import shelltools as sht
@@ -87,17 +89,31 @@ class Create(LdiCommand):
 class Upload(LdiCommand):
     """upload a new package to the incoming queue of a repository"""
     name="upload"
+    min_args = 2
     max_args = sys.maxint
-    arguments = "package.changes [...]"
-    def pre_checks(self, option_parser):
-        pass
-    
-    def post_checks(self):
-        pass
+    arguments = "repository package.changes [...]"
+
+    def _get_all_package_files(self, changes_files):
+        file_list = []
+        for filename in changes_files:
+            input = open(filename)
+            dirname = osp.dirname(filename)
+            changes = Changes(input)
+            file_list.append(filename)
+            for info in changes['Files']:
+                file_list.append(osp.join(dirname, info['name']))
+            input.close()
+        return file_list
     
     def process(self):
-        raise NotImplementedError("This command is not yet available")
-    
+        repository = self.args[0]
+        changes_files = self.args[1:]
+        all_files = self._get_all_package_files(changes_files)
+        destdir = osp.join(self.get_config_value('destination'), repository, 'incoming')
+        for filename in all_files:
+            sht.copy(filename, destdir, self.group, 0775)
+        
+        
 class Publish(LdiCommand):
     """process the incoming queue of a repository"""
     name="publish"
