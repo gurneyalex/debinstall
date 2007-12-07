@@ -71,8 +71,8 @@ class LdiCommand(Command):
         if not hasattr(self, '_parser'):
             self._parser = ConfigParser()
             self._parser.read([self.options.configfile])
-        
-        sections = ['debinstall', self.name]
+
+        sections = ['debinstall', self.name, 'create', 'upload', 'publish', 'archive']
         for section in sections:
             if self._parser.has_section(section):
                 if self._parser.has_option(section, option):
