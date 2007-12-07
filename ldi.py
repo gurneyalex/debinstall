@@ -5,8 +5,8 @@ import os
 import os.path as osp
 
 from logilab.common import optparser
-from debian_bundle.deb822 import Changes
 
+from debinstall2.debfiles import Changes
 from debinstall2.command import LdiCommand, CommandError
 from debinstall2 import shelltools as sht
 from debinstall2.signature import check_sig
@@ -106,13 +106,8 @@ class Upload(LdiCommand):
     def _get_all_package_files(self, changes_files):
         file_list = []
         for filename in changes_files:
-            fdesc = open(filename)
-            dirname = osp.dirname(filename)
-            changes = Changes(fdesc)
-            file_list.append(filename)
-            for info in changes['Files']:
-                file_list.append(osp.join(dirname, info['name']))
-            fdesc.close()
+            changes = Changes(filename)
+            file_list += changes.get_all_files()
         return file_list
 
 
@@ -125,17 +120,8 @@ class Upload(LdiCommand):
         """
         failed = []
         for filename in changes_files:
-            if not check_sig(filename):
-                failed.append(filename)
-            fdesc = open(filename)
-            dirname = osp.dirname(filename)
-            changes = Changes(fdesc)
-            for info in changes['Files']:
-                if info['name'].endswith('.dsc'):
-                    dscfile = osp.join(dirname, info['name'])
-                    if not check_sig(dscfile):
-                        failed.append(dscfile)
-                        break
+            changes = Changes(filename)
+            changes.check_sig(failed)
         if failed:
             raise CommandError('The following files are not signed:\n' + \
                                '\n'.join(failed))
