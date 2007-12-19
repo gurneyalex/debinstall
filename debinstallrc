@@ -8,15 +8,13 @@ configurations=/var/lib/debinstall
 
 [upload]
 check_signature=yes
-run_lintian=yes
-run_linda=yes
+checkers=lintian linda
 
 [publish]
 signrepo=no
 keyid=FFFFFF
 check_signature=yes
-run_lintian=yes
-run_linda=yes
+checkers=lintian linda
 
 [archive]
 archivedir=/var/www/debian/archive
