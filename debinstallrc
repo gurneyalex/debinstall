@@ -11,7 +11,7 @@ check_signature=yes
 checkers=lintian linda
 
 [publish]
-signrepo=no
+sign_repo=no
 keyid=FFFFFF
 check_signature=yes
 checkers=lintian linda
