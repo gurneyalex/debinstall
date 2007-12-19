@@ -3,6 +3,9 @@
 import sys
 import os
 from ConfigParser import ConfigParser
+import logging
+
+from debinstall2.logging_handlers import CONSOLE
 
 
 class Command(object):
@@ -13,11 +16,15 @@ class Command(object):
     min_args = 1
     max_args = 1
     arguments = "arg1"
-    def __init__(self):
+    def __init__(self, debug=False):
         self.options = None
         self.args = None
         self.repo_name = None
-
+        self.logger = logging.getLogger('debinstall.%s' % self.name)
+        if debug:
+            self.logger.setLevel(logging.DEBUG)
+        self.logger.addHandler(CONSOLE)
+        
     def register(self, option_parser):
         option_parser.add_command(self.name,
                                   (self.run, self.add_options),
@@ -31,7 +38,7 @@ class Command(object):
             self.process()
             self.post_checks()
         except CommandError, exc:
-            print >> sys.stderr, str(exc)
+            self.logger.critical(exc)
             sys.exit(1)
             
     def add_options(self, option_parser):
@@ -80,7 +87,9 @@ class LdiCommand(Command):
         for section in sections:
             if self._parser.has_section(section):
                 if self._parser.has_option(section, option):
-                    return self._parser.get(section, option)
+                    value = self._parser.get(section, option)
+                    self.logger.debug('value for %s: %s', option, value)
+                    return value
         message = "No option %s in sections %s of %s" % (option, sections,
                                                         self.options.configfile)
         raise CommandError(message)
