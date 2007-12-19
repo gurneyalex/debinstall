@@ -4,6 +4,7 @@ import os.path as osp
 from debian_bundle import deb822
 
 from debinstall2.signature import check_sig
+from debinstall2.checkers import ALL_CHECKERS
 
 class Changes:
     def __init__(self, filename):
@@ -42,4 +43,17 @@ class Changes:
         if dsc is not None and not check_sig(dsc):
             status = False
             out_wrong.append(dsc)
+        return status
+
+    def run_checkers(self, checkers, out_wrong=None):
+        status = True
+        if out_wrong is None:
+            out_wrong = []
+        for checker in ALL_CHECKERS:
+            if checker.command not in checkers:
+                continue
+            success, stdout, stderr = checker.run(self.filename)
+            if not success:
+                out_wrong += stderr
+            status = status and success
         return status
