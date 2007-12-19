@@ -1,6 +1,7 @@
 """various shell functions to help working with files and permissions"""
 # XXX integrate in logilab.common ?
 import os
+import os.path as osp
 import grp
 import shutil
 
@@ -60,7 +61,16 @@ def getgid(group):
 
 def copy(source, dest, group, perms):
     """copy source to dest using shutil.copy and set the permissions"""
+    if osp.isdir(dest):
+        dest = osp.join(dest, osp.basename(source))
     shutil.copy(source, dest)
+    set_permissions(dest, -1, group, perms)
+        
+def move(source, dest, group, perms):
+    """move source to dest using shutil.move and set the permissions"""
+    if osp.isdir(dest):
+        dest = osp.join(dest, osp.basename(source))
+    shutil.move(source, dest)
     set_permissions(dest, -1, group, perms)
         
 
