@@ -3,6 +3,7 @@ manipulate debian packages and repositories"""
 import sys
 import os
 import os.path as osp
+import glob
 
 from logilab.common import optparser
 
@@ -17,7 +18,7 @@ def run(args=None):
     usage = """usage: ldi <command> <options> [arguments]"""
     parser = optparser.OptionParser(usage=usage)
     for cmd in (Create, Upload, Publish, Archive):
-        instance = cmd()
+        instance = cmd(debug=True)
         instance.register(parser)
     run, options, args = parser.parse_command(args)
     run(options, args, parser)
@@ -80,17 +81,23 @@ class Create(LdiCommand):
             if not self.options.source_repositories:
                 message = 'No source repositories for package extraction'
                 raise CommandError(message)
-        
 
-        sht.mkdir(dest_dir, self.group, 0775)
-        sht.mkdir(osp.join(dest_dir, 'debian'), self.group, 0775)
-        sht.mkdir(osp.join(dest_dir, 'incoming'), self.group, 0775)
+        for directory in [dest_dir,
+                          osp.join(dest_dir, 'incoming'),
+                          osp.join(dest_dir, 'debian'),
+                          ]:
+            self.logger.info('creation of %s', directory)
+            sht.mkdir(directory, self.group, 0775)
+
         if self.options.aptconffile is not None:
+            self.logger.info('copying %s to %s', self.options.aptconffile, aptconf)
             sht.copy(self.options.aptconffile, aptconf)
         else:
             import aptconffile
+            self.logger.info('writing default aptconf to %s', aptconf)
             aptconffile.writeconf(aptconf, self.group, 0664)
         import ldiconffile
+        self.logger.info('writing ldiconf to %s', ldiconf)
         ldiconffile.writeconf(ldiconf, self.group, 0664,
                               self.options.source_repositories,
                               self.options.packages)
@@ -106,11 +113,16 @@ class Upload(LdiCommand):
     def _get_all_package_files(self, changes_files):
         file_list = []
         for filename in changes_files:
-            changes = Changes(filename)
-            file_list += changes.get_all_files()
+            dirname = osp.dirname(filename)
+            self.logger.info('preparing upload of %s', filename)
+            all_files = Changes(filename).get_all_files()
+            for candidate in all_files:
+                try:
+                    fdesc = open(candidate)
+                except IOError, exc:
+                    raise CommandError('Cannot read %s from %s: %s' % (candidate, filename, exc))
+            file_list += all_files
         return file_list
-
-
 
     def _check_signatures(self, changes_files):
         """return True if the changes files and appropriate dsc files
@@ -118,15 +130,28 @@ class Upload(LdiCommand):
         
         raise CommandError otherwise.
         """
+        if self.get_config_value('check_signature').lower() in ('no', 'false'):
+            self.logger.info("Signature checks skipped")
+            return True
         failed = []
         for filename in changes_files:
-            changes = Changes(filename)
-            changes.check_sig(failed)
+            Changes(filename).check_sig(failed)
+            
         if failed:
             raise CommandError('The following files are not signed:\n' + \
                                '\n'.join(failed))
         return True
+
+    def _run_checkers(self, changes_files):
+        checkers = self.get_config_value('checkers').split()
+        failed = []
+        for filename in changes_files:
+            Changes(filename).run_checkers(checkers, failed)
+        if failed:
+            raise CommandError('The following packaging errors were found:\n' + \
+                               '\n'.join(failed))
     
+        
     def process(self):
         repository = self.args[0]
         changes_files = self.args[1:]
@@ -135,24 +160,46 @@ class Upload(LdiCommand):
         destdir = osp.join(self.get_config_value('destination'),
                            repository,
                            'incoming')
+        self.logger.info('uploading packages to %s', destdir)
         for filename in all_files:
             sht.copy(filename, destdir, self.group, 0775)
-        
-        
-class Publish(LdiCommand):
+
+class Publish(Upload):
     """process the incoming queue of a repository"""
     name = "publish"
-    min_args = 0
+    min_args = 1
     max_args = sys.maxint
-    argument = "[source_package...]"
-    def pre_checks(self, option_parser):
-        pass
-    
-    def post_checks(self):
-        pass
-    
+    argument = "repository [package.changes...]"
+
+
+    def _get_incoming_changes(self):
+        incoming = osp.join(self.get_config_value('destination'),
+                            self.args[0],
+                            'incoming')
+        changes_files = self.args[1:]
+        if changes_files:
+            for change in changes_files:
+                if osp.isabs(change):
+                    raise CommandError('%s is not a relative path' % change)
+            return [osp.join(incoming, change) for change in changes_files]
+        else:
+            return glob.glob(osp.join(incoming, '*.changes'))
+        
+        
     def process(self):
-        raise NotImplementedError("This command is not yet available")
+        repository = self.args[0]
+        destdir = osp.join(self.get_config_value('destination'),
+                           repository,
+                           'debian')
+        
+        changes_files = self._get_incoming_changes()
+        
+        self._check_signatures(changes_files)
+        self._run_checkers(changes_files)
+        all_files = self._get_all_package_files(changes_files)
+        self.logger.info('uploading packages to %s', destdir)
+        for filename in all_files:
+            sht.copy(filename, destdir, self.group, 0775)
     
 class Archive(LdiCommand):
     """cleanup a repository by moving old unused packages to an
