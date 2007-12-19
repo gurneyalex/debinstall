@@ -45,15 +45,13 @@ configurations=%(configurations)s
 
 [upload]
 check_signature=%(check_signature)s
-run_lintian=%(run_lintian)s
-run_linda=%(run_linda)s
+checkers=%(run_lintian)s %(run_linda)s
 
 [publish]
 signrepo=%(signrepo)s
 keyid=%(keyid)s
 check_signature=%(check_signature)s
-run_lintian=%(run_lintian)s
-run_linda=%(run_linda)s
+checkers=%(run_lintian)s %(run_linda)s
 
 [archive]
 archivedir=%(archivedir)s
@@ -62,11 +60,11 @@ archivedir=%(archivedir)s
 def write_config(filename, **substitutions):
     defaults={'destination': osp.join(TESTDIR, 'data', 'acceptance', 'repositories'),
               'configurations': osp.join(TESTDIR, 'data', 'acceptance', 'configurations'),
-              'run_lintian': 'no',
-              'run_linda': 'no',
+              'run_lintian': '',
+              'run_linda': '',
               'signrepo': 'no',
               'keyid': 'FFFFFFFF',
-              'check_signature': 'no',
+              'check_signature': 'yes',
               'archivedir': osp.join(TESTDIR, 'data', 'acceptance', 'archives'),
               }
     filename = osp.join(TESTDIR, 'data', filename)
@@ -121,7 +119,31 @@ class LdiUpload_TC(TestCase, CommandLineTester):
         command = ['ldi', 'upload', '-c', self.config, 'my_repo', changesfile]
         status, output, error = self.run_command(command)
         self.assertEqual(status, 1, error)
-        
+
+    def test_upload_unsigned_changes_no_sigcheck(self):
+        os.unlink(self.config)
+        self.config = write_config('debinstallrc_acceptance', check_signature='no')
+        changesfile = osp.join(TESTDIR, 'packages', 'unsigned_package', 'package1_1.0-1_i386.changes')
+        command = ['ldi', 'upload', '-c', self.config, 'my_repo', changesfile]
+        status, output, error = self.run_command(command)
+        self.assertEqual(status, 0, error)
+        base_dir = osp.join(TESTDIR, 'data', 'acceptance')
+        repodir = osp.join(base_dir, 'repositories', 'my_repo')
+        incoming = osp.join(repodir, 'incoming')
+        uploaded = os.listdir(incoming)
+        expected = ['package1_1.0-1_all.deb',
+                    'package1_1.0-1.diff.gz',
+                    'package1_1.0-1.dsc',
+                    'package1_1.0-1_i386.changes',
+                    'package1_1.0.orig.tar.gz',
+                    ]
+        self.assertSetEqual(uploaded, expected)
+
+    def test_upload_wrong_md5(self):
+        self.skip('unwritten test')
+
+    def test_upload_lintian_error(self):
+        self.skip('unwritten test')
 
 class LdiCreate_TC(TestCase, CommandLineTester):
     def setUp(self):
