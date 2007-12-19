@@ -11,6 +11,7 @@ from debinstall2.debfiles import Changes
 from debinstall2.command import LdiCommand, CommandError
 from debinstall2 import shelltools as sht
 from debinstall2.signature import check_sig
+from debinstall2 import apt_ftparchive
 
 def run(args=None):
     if args is None:
@@ -199,8 +200,25 @@ class Publish(Upload):
         all_files = self._get_all_package_files(changes_files)
         self.logger.info('uploading packages to %s', destdir)
         for filename in all_files:
-            sht.copy(filename, destdir, self.group, 0775)
-    
+            sht.move(filename, destdir, self.group, 0664)
+
+        conf_base_dir = self.get_config_value('configurations')
+        aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repository)
+        apt_ftparchive.clean(destdir)
+        self.logger.info('Running apt-ftparchive generate')
+        apt_ftparchive.generate(destdir, aptconf, self.group)
+        self.logger.info('Running apt-ftparchive release')
+        apt_ftparchive.release(destdir, aptconf, self.group)
+        self._sign_repo(destdir)
+
+    def _sign_repo(self, repository):
+        if self.get_config_value("sign_repo").lower() in ('no', 'false'):
+            return
+        self.logger.info('Signing release')
+        apt_ftparchive.sign(repository,
+                            self.get_config_value('keyid'),
+                            self.group)
+        
 class Archive(LdiCommand):
     """cleanup a repository by moving old unused packages to an
     archive directory"""

@@ -48,7 +48,7 @@ check_signature=%(check_signature)s
 checkers=%(run_lintian)s %(run_linda)s
 
 [publish]
-signrepo=%(signrepo)s
+sign_repo=%(signrepo)s
 keyid=%(keyid)s
 check_signature=%(check_signature)s
 checkers=%(run_lintian)s %(run_linda)s
@@ -81,6 +81,29 @@ def cleanup_config(filename):
     if osp.isfile(filename):
         os.remove(filename)
 
+class LdiPublish_TC(TestCase, CommandLineTester):
+    def setUp(self):
+        self.tearDown()
+        
+        self.config = write_config('debinstallrc_acceptance')
+        command = ['ldi', 'create', '-c', self.config, 'my_repo']
+        self.run_command(command)
+        changesfile = osp.join(TESTDIR, 'packages', 'signed_package', 'package1_1.0-1_i386.changes')
+        command = ['ldi', 'upload', '-c', self.config, 'my_repo', changesfile]
+        self.run_command(command)
+        
+    def tearDown(self):
+        dirname = osp.join(TESTDIR, 'data', 'acceptance')
+        if osp.exists(dirname):
+            shutil.rmtree(dirname)
+        cleanup_config('debinstallrc_acceptance')
+
+
+    def test_publish_normal(self):
+        command = ['ldi', 'publish', '-c', self.config, 'my_repo']
+        status, output, error = self.run_command(command)
+        self.assertEqual(status, 0, error)
+        
 
 class LdiUpload_TC(TestCase, CommandLineTester):
     def setUp(self):
