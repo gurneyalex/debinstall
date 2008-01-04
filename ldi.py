@@ -17,7 +17,6 @@
 """The ldi command provides access to various subcommands to
 manipulate debian packages and repositories"""
 import sys
-import os
 import os.path as osp
 import glob
 
@@ -26,7 +25,6 @@ from logilab.common import optparser
 from debinstall2.debfiles import Changes
 from debinstall2.command import LdiCommand, CommandError
 from debinstall2 import shelltools as sht
-from debinstall2.signature import check_sig
 from debinstall2 import apt_ftparchive
 
 def run(args=None):
@@ -240,14 +238,6 @@ class Archive(LdiCommand):
     archive directory"""
     name = "archive"
 
-    def pre_checks(self, option_parser):
-        pass
-
-    def post_checks(self):
-        pass
-
-    def process(self):
-        raise NotImplementedError("This command is not yet available")
     
 
 class Destroy(LdiCommand):
@@ -255,5 +245,3 @@ class Destroy(LdiCommand):
     configuration files"""
     name = 'destroy'
 
-    def process(self):
-        raise NotImplementedError("This command is not yet available")

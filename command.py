@@ -85,6 +85,11 @@ class LdiCommand(Command):
           'help': 'configuration file (default: /etc/debinstall/debinstallrc)'}
          ),                  
         ]
+
+    def __init__(self, debug=False):
+        Command.__init__(self, debug)
+        self._parser = None
+        
     def pre_checks(self, option_parser):
         #os.umask(self.get_config_value('umask'))
         pass
@@ -93,7 +98,7 @@ class LdiCommand(Command):
     def get_config_value(self, option):
         if self.options is None:
             raise RuntimeError("No configuration file available yet")
-        if not hasattr(self, '_parser'):
+        if self._parser is None:
             self._parser = ConfigParser()
             self._parser.read([self.options.configfile])
 

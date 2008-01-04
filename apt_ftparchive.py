@@ -16,23 +16,24 @@
 
 """wrapper functions to run the apt-ftparchive commande"""
 
+import os
 import os.path as osp
 from glob import glob
 import subprocess
 
 from debinstall2.shelltools import set_permissions
-
+from debinstall2.command import CommandError
 
 def clean(debian_dir):
-    candidates= ['Packages*', 'Source*', 'Content*', 'Release*']
+    candidates = ['Packages*', 'Source*', 'Content*', 'Release*']
     for candidate in candidates:
         for path in glob(osp.join(debian_dir, candidate)):
-            osp.remove(path)
+            os.remove(path)
 
 def generate(debian_dir, aptconf, group):
     pipe = subprocess.Popen(['apt-ftparchive', 'generate', aptconf])
     status = pipe.wait()
-    candidates= ['Packages*', 'Source*', 'Content*', 'Release*']
+    candidates = ['Packages*', 'Source*', 'Content*', 'Release*']
     for candidate in candidates:
         for path in glob(osp.join(debian_dir, candidate)):
             set_permissions(path, -1, group, 0664)
