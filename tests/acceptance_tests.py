@@ -8,7 +8,7 @@ from logilab.common.testlib import TestCase
 
 TESTDIR = osp.abspath(osp.dirname(__file__))
 
-DEBUG = True
+DEBUG = False
 
 def setup():
     ldi_dir = osp.normpath(osp.join(TESTDIR, '..', 'bin'))
