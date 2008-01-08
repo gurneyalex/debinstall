@@ -1,0 +1,10 @@
+#!/usr/bin/python
+
+import sys
+
+print """This command is deprecated. Use 'ldi upload' to upload a
+package, and 'ldi publish' to publish incoming packages. 
+
+See 'ldi --help' for more information. """
+
+sys.exit(1)
