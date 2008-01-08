@@ -33,7 +33,7 @@ def run(args=None):
         args = sys.argv[1:]
     usage = """usage: ldi <command> <options> [arguments]"""
     parser = optparser.OptionParser(usage=usage, version='debinstall %s' % version)
-    for cmd in (Create, Upload, Publish, Archive):
+    for cmd in (Create, Upload, Publish, Archive, Configure):
         instance = cmd(debug=True)
         instance.register(parser)
     run, options, args = parser.parse_command(args)
@@ -71,8 +71,16 @@ class Create(LdiCommand):
         self.repo_name = self.args[0]
         directories = [self.get_config_value(confkey)
                        for confkey in ('destination', 'configurations')]
-        sht.ensure_directories(directories)
-        sht.ensure_permissions(directories, self.group, 0775, 0664)
+        try:
+            sht.ensure_directories(directories)
+            sht.ensure_permissions(directories, self.group, 0775, 0664)
+        except OSError, exc:
+            raise CommandError('Unable to create the directories %s with the '
+                               'correct permissions.\nPlease edit %s and run '
+                               '"ldi configure" as root.'  %
+                               (directories, self.options.configfile))
+
+            
                 
     def post_checks(self):
         directories = [self.get_config_value(confkey)
@@ -233,7 +241,27 @@ class Publish(Upload):
         apt_ftparchive.sign(repository,
                             self.get_config_value('keyid'),
                             self.group)
-        
+
+
+class Configure(LdiCommand):
+    """install the program by creating the correct directories with
+    the associated permissions"""
+    name = "configure"
+    min_args = 0
+    max_args = 0
+    arguments = ""
+
+    def process(self):
+        directories = [self.get_config_value(confkey)
+                       for confkey in ('destination', 'configurations', 'archivedir')]
+        try:
+            sht.ensure_directories(directories)
+            sht.ensure_permissions(directories, self.group, 0775, 0664)
+        except OSError, exc:
+            raise CommandError('Unable to create the directories %s with the correct permissions.\nPlease fix this or edit %s'  % (directories, self.options.configfile))
+        self.logger.info('Installation successful')
+
+    
 class Archive(LdiCommand):
     """cleanup a repository by moving old unused packages to an
     archive directory"""
