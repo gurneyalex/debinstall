@@ -26,12 +26,13 @@ from debinstall2.debfiles import Changes
 from debinstall2.command import LdiCommand, CommandError
 from debinstall2 import shelltools as sht
 from debinstall2 import apt_ftparchive
+from debinstall2.__pkginfo__ import version
 
 def run(args=None):
     if args is None:
         args = sys.argv[1:]
     usage = """usage: ldi <command> <options> [arguments]"""
-    parser = optparser.OptionParser(usage=usage)
+    parser = optparser.OptionParser(usage=usage, version='debinstall %s' % version)
     for cmd in (Create, Upload, Publish, Archive):
         instance = cmd(debug=True)
         instance.register(parser)
