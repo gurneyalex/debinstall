@@ -1,0 +1,49 @@
+ChangeLog for debinstall
+========================
+
+2008-01-08  --  2.0.0
+    * complete rewrite
+    * debinstall command is deprecated. Use ldi instead
+
+2007-06-28  --  0.5.0
+    * use logging module to give information about current step (closes #11240)
+    * check that we are really upgrading and warn if we downgrade (closes #11239)
+    * prevent gpg from prompting to confirm overwrite of Release.gpg if nothing has changed
+    * generate nicer Release files (with more fields)
+    * fixed bugs in --check-repo-integrity
+    * added some short options
+    * compress indexes with bz2 (closes: #3011)
+    * use an apt.conf file to get a correct Release file (closes #2832)
+    * fixe path issues in index files (closes #3941)
+
+2006-03-08  --  0.4.0
+    * bug fixes
+
+    * offers to sign repository (new apt check)
+	
+2006-02-21  --  0.3.0
+    * uses Replace to find previous packages
+
+    * offers to use linda/lintian
+
+    * use optparse instead of getopt
+
+    * more checks
+
+    * functionnality to check repository
+
+    * Packages generation corrected
+
+2006-02-08  --  0.2.0
+    * added possibility of choosing the processing of one package in
+	particular (usefull for creating partial repositories for a
+	package and all its dependencies)
+	
+2006-02-07  --  0.1.0
+    * First release.
+
+    * minimal functionnality : move packages between incoming,
+	repository and old archive, do basic checks in the process, and
+	has a simple cleanup algorithm.
+
+
