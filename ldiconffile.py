@@ -16,7 +16,7 @@
 
 """ldi.conf manipilation utilities"""
 
-import debinstall2.shelltools as sht
+import debinstall.shelltools as sht
 
 def writeconf(dest, group, perms, sources, packages):
     """generate a ldi.conf file with the appropriate values"""

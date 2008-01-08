@@ -15,7 +15,7 @@
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 """apt.conf file manipulation"""
-import debinstall2.shelltools as sht
+import debinstall.shelltools as sht
 
 def writeconf(dest, group, perms):
     """write a configuration file for use by apt-ftparchive"""

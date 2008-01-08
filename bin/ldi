@@ -1,4 +1,4 @@
 #!/usr/bin/python
 
-from debinstall2 import ldi
+from debinstall import ldi
 ldi.run()

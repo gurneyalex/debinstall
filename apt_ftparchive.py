@@ -21,8 +21,8 @@ import os.path as osp
 from glob import glob
 import subprocess
 
-from debinstall2.shelltools import set_permissions
-from debinstall2.command import CommandError
+from debinstall.shelltools import set_permissions
+from debinstall.command import CommandError
 
 def clean(debian_dir):
     candidates = ['Packages*', 'Source*', 'Content*', 'Release*']
