@@ -21,7 +21,7 @@ import os
 from ConfigParser import ConfigParser
 import logging
 
-from debinstall2.logging_handlers import CONSOLE
+from debinstall.logging_handlers import CONSOLE
 
 
 class Command(object):

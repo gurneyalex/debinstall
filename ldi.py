@@ -22,11 +22,11 @@ import glob
 
 from logilab.common import optparser
 
-from debinstall2.debfiles import Changes
-from debinstall2.command import LdiCommand, CommandError
-from debinstall2 import shelltools as sht
-from debinstall2 import apt_ftparchive
-from debinstall2.__pkginfo__ import version
+from debinstall.debfiles import Changes
+from debinstall.command import LdiCommand, CommandError
+from debinstall import shelltools as sht
+from debinstall import apt_ftparchive
+from debinstall.__pkginfo__ import version
 
 def run(args=None):
     if args is None:

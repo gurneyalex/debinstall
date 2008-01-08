@@ -2,7 +2,7 @@ import os.path as osp
 
 from logilab.common.testlib import TestCase
 
-from debinstall2.debfiles import *
+from debinstall.debfiles import *
 
 TESTDIR = osp.abspath(osp.dirname(__file__))
 

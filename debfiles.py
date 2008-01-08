@@ -19,8 +19,8 @@ import os.path as osp
 
 from debian_bundle import deb822
 
-from debinstall2.signature import check_sig
-from debinstall2.checkers import ALL_CHECKERS
+from debinstall.signature import check_sig
+from debinstall.checkers import ALL_CHECKERS
 
 class Changes:
     def __init__(self, filename):
