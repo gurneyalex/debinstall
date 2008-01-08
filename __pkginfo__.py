@@ -55,5 +55,5 @@ pyversions = ["2.4"]
 debian_handler = 'python-dep-standalone'
  
 from os.path import join
-include_dirs = [join('test', 'data')]
+include_dirs = [join('tests', 'data'), join('tests', 'packages')]
 
