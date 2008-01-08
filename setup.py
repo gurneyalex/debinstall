@@ -126,8 +126,7 @@ def export(from_dir, to_dir,
 
 
 EMPTY_FILE = '"""generated file, don\'t modify or your data will be lost"""\n'
-import pprint
-pprint.pprint(locals())
+
 def install(**kwargs):
     """setup entry point"""
     if subpackage_of:
