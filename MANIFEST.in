@@ -2,3 +2,4 @@ recursive-include doc/ *
 recursive-include bin *
 recursive-include tests/packages *
 include debinstallrc
+include ChangeLog
