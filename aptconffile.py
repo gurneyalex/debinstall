@@ -17,10 +17,10 @@
 """apt.conf file manipulation"""
 import debinstall.shelltools as sht
 
-def writeconf(dest, group, perms):
+def writeconf(dest, group, perms, distribution):
     """write a configuration file for use by apt-ftparchive"""
     fdesc = open(dest, "w")
-    fdesc.write(APTDEFAULT_APTCONF)
+    fdesc.write(APTDEFAULT_APTCONF % {'distribution': distribution}) 
     fdesc.close()
     sht.set_permissions(dest, -1, group, perms)
     
@@ -31,7 +31,7 @@ APT {
     Release {
         Origin "WRITEME";
         Label  "WRITEME";
-        Suite  "sid";
+        Suite  "%(distribution)s";
         Description "WRITEME";
     };
   };     
@@ -46,19 +46,19 @@ Default {
 
 
 Dir {
-        ArchiveDir ".";
+        ArchiveDir "debian";
 };
 
 TreeDefault {
-    Directory "debian/";
-    SrcDirectory "debian/";
+    Directory "%(distribution)s/";
+    SrcDirectory "%(distribution)s/";
 
 };
 
-BinDirectory "debian" {
-    Packages "debian/Packages";
-    Sources "debian/Sources";
-    Contents "debian/Contents"
+BinDirectory "%(distribution)s" {
+    Packages "%(distribution)s/Packages";
+    Sources "%(distribution)s/Sources";
+    Contents "%(distribution)s/Contents"
 };
 '''
 
