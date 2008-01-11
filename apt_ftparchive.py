@@ -20,9 +20,16 @@ import os
 import os.path as osp
 from glob import glob
 import subprocess
+import logging
 
 from debinstall.shelltools import set_permissions
 from debinstall.command import CommandError
+from debinstall.logging_handlers import CONSOLE
+
+
+logger = logging.getLogger('debinstall.apt-ftparchive')
+logger.setLevel(logging.DEBUG)
+logger.addHandler(CONSOLE)
 
 def clean(debian_dir):
     candidates = ['Packages*', 'Source*', 'Content*', 'Release*']
@@ -31,7 +38,10 @@ def clean(debian_dir):
             os.remove(path)
 
 def generate(debian_dir, aptconf, group):
-    pipe = subprocess.Popen(['apt-ftparchive', 'generate', aptconf])
+    command = ['apt-ftparchive', 'generate', aptconf]
+    logger.info('running %s$ %s', os.getcwd(), ' '.join(command))
+    pipe = subprocess.Popen(command)
+    
     status = pipe.wait()
     candidates = ['Packages*', 'Source*', 'Content*', 'Release*']
     for candidate in candidates:
@@ -42,7 +52,9 @@ def generate(debian_dir, aptconf, group):
 
 def release(debian_dir, aptconf, group):    
     release = open(osp.join(debian_dir, 'Release'), 'w')
-    pipe = subprocess.Popen(['apt-ftparchive', '-c', aptconf, 'release', debian_dir],
+    command = ['apt-ftparchive', '-c', aptconf, 'release', debian_dir]
+    logger.info('running %s$ %s', os.getcwd(), ' '.join(command))
+    pipe = subprocess.Popen(command,
                             stdout=release)
     status = pipe.wait()
     if status != 0:
@@ -52,8 +64,10 @@ def release(debian_dir, aptconf, group):
 def sign(debian_dir, key_id, group):
     releasepath = osp.join(debian_dir, 'Release')
     signed_releasepath = releasepath + '.gpg'
-    command = ['gpg', '-b', '-a', '--yes', '--default-key', key_id, '-o', signed_releasepath]
+    command = ['gpg', '-b', '-a', '--yes', '--default-key', key_id, '-o', signed_releasepath, releasepath]
+    logger.info('running %s$ %s', os.getcwd(), ' '.join(command))
     pipe = subprocess.Popen(command)
+    pipe.communicate()
     status = pipe.wait()
     set_permissions(signed_releasepath, -1, group, 0664)
     if status != 0:
