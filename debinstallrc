@@ -5,6 +5,7 @@ umask=0002
 [create]
 destination=/var/www/debian
 configurations=/var/lib/debinstall
+default_distribution=sid
 
 [upload]
 check_signature=yes
