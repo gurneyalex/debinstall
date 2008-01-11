@@ -18,6 +18,7 @@
 
 import sys
 import os
+import os.path as osp
 from ConfigParser import ConfigParser
 import logging
 
@@ -89,11 +90,36 @@ class LdiCommand(Command):
     def __init__(self, debug=False):
         Command.__init__(self, debug)
         self._parser = None
+        self._repo_parser = None
         
     def pre_checks(self, option_parser):
         #os.umask(self.get_config_value('umask'))
         pass
 
+    def _get_ldi_conf_path(self, reponame):
+        configdir = self.get_config_value("configurations")
+        return  osp.join(configdir, '%s-ldi.conf' % reponame)
+    
+    def get_repo_config_value(self, reponame, option):
+        if self.options is None:
+            raise RuntimeError("No configuration file available yet")
+        if self._repo_parser is None:
+            self._repo_parser = ConfigParser()
+            configfile = self._get_ldi_conf_path(reponame)
+            self._repo_parser.read([configfile])
+
+        sections = ['publication', 'subrepository']
+        for section in sections:
+            if self._repo_parser.has_section(section):
+                if self._repo_parser.has_option(section, option):
+                    value = self._repo_parser.get(section, option)
+                    self.logger.debug('value for %s: %s', option, value)
+                    return value
+                
+        message = "No option %s in sections %s of %s" % (option, sections,
+                                        self._get_ldi_conf_path(reponame))
+        raise CommandError(message)
+        
 
     def get_config_value(self, option):
         if self.options is None:

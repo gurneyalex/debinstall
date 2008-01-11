@@ -28,7 +28,7 @@ def writeconf(dest, group, perms, distribution, sources, packages):
     sht.set_permissions(dest, -1, group, perms)
 
 DEFAULT_LDICONF = '''\
-[DEFAULT]
+[publication]
 distribution=%(distribution)s
 
 [subrepository]

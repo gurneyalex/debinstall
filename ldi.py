@@ -70,28 +70,7 @@ class Create(LdiCommand):
           }
          ),
         ] 
-
-
-    def pre_checks(self, option_parser):
-        LdiCommand.pre_checks(self, option_parser)
-        self.repo_name = self.args[0]
-        directories = [self.get_config_value(confkey)
-                       for confkey in ('destination', 'configurations')]
-##         try:
-##             sht.ensure_directories(directories)
-##             sht.ensure_permissions(directories, self.group, 0775, 0664)
-##         except OSError, exc:
-##             raise CommandError('Unable to create the directories %s with the '
-##                                'correct permissions.\nPlease edit %s and run '
-##                                '"ldi configure" as root.'  %
-##                                (directories, self.options.configfile))
-
-            
                 
-    def post_checks(self):
-        for confkey in ('destination', 'configurations'):
-            directories = glob.glob(osp.join(self.get_config_value(confkey), '*'))
-            sht.ensure_permissions(directories, self.group, 0775, 0664)
     
     def process(self):
         dest_base_dir = self.get_config_value("destination")
@@ -134,7 +113,7 @@ class Create(LdiCommand):
         else:
             import aptconffile
             self.logger.info('writing default aptconf to %s', aptconf)
-            aptconffile.writeconf(aptconf, self.group, 0664)
+            aptconffile.writeconf(aptconf, self.group, 0664, distname)
             self.logger.critical('Please edit apt conf file %s (especially the '
                              'first section)', aptconf)
 
@@ -227,7 +206,9 @@ class Publish(Upload):
         workdir = osp.join(self.get_config_value('destination'),
                            repository)
         destdir = osp.join(workdir,
-                           'debian')
+                           'debian',
+                           self.get_repo_config_value(repository,
+                                                      'distribution'))
         cwd = os.getcwd()
         os.chdir(workdir)
         try:

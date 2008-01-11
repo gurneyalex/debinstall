@@ -106,7 +106,23 @@ class LdiPublish_TC(TestCase, CommandLineTester):
         command = ['ldi', 'publish', '-c', self.config, 'my_repo']
         status, output, error = self.run_command(command)
         self.assertEqual(status, 0, error)
+        base_dir = osp.join(TESTDIR, 'data', 'acceptance')
+        repodir = osp.join(base_dir, 'repositories', 'my_repo')
+        sid = osp.join(repodir, 'debian', 'sid')
+        expected_generated = set(['Release', 'Packages', 'Packages.gz', 'Packages.bz2',
+                              'Sources', 'Sources.gz', 'Sources.bz2',
+                              'Contents', 'Contents.gz', 'Contents.bz2', ])
+        expected_published = set(['package1_1.0-1_all.deb',
+                                  'package1_1.0-1.diff.gz',
+                                  'package1_1.0-1.dsc',
+                                  'package1_1.0-1_i386.changes',
+                                  'package1_1.0.orig.tar.gz',
+                                  ])
+        generated = set(os.listdir(sid))
         
+        self.failUnless(expected_generated.issubset(generated))
+        print generated
+        self.assertSetEqual(generated, expected_published | expected_generated)
 
 class LdiUpload_TC(TestCase, CommandLineTester):
     def setUp(self):
@@ -208,14 +224,14 @@ class LdiCreate_TC(TestCase, CommandLineTester):
         config = f.read()
         f.close()
         expected = '''\
-[DEFAULT]
+[publication]
 distribution=sid
 
 [subrepository]
 sources=
 packages=
 '''
-        self.assertEquals(config, expected, 'incorrect ldi.conf written')
+        self.assertEquals(config, expected, 'incorrect ldi.conf written:\n'+config)
 
         
     def test_no_double_creation(self):
@@ -236,14 +252,14 @@ packages=
         config = f.read()
         f.close()
         expected = '''\
-[DEFAULT]
+[publication]
 distribution=sid
 
 [subrepository]
 sources=repo1, repo2
 packages=package1, package2
 '''
-        self.assertEquals(config, expected, 'incorrect ldi.conf written')
+        self.assertEquals(config, expected, 'incorrect ldi.conf written:\n'+config)
 
 
     def test_source_without_package(self):
