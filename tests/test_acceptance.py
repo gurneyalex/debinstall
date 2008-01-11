@@ -42,6 +42,7 @@ umask=0002
 [create]
 destination=%(destination)s
 configurations=%(configurations)s
+default_distribution=sid
 
 [upload]
 check_signature=%(check_signature)s
@@ -86,6 +87,8 @@ class LdiPublish_TC(TestCase, CommandLineTester):
         self.tearDown()
         
         self.config = write_config('debinstallrc_acceptance')
+        command = ['ldi', 'configure', '-c', self.config]
+        status, output, error = self.run_command(command)
         command = ['ldi', 'create', '-c', self.config, 'my_repo']
         self.run_command(command)
         changesfile = osp.join(TESTDIR, 'packages', 'signed_package', 'package1_1.0-1_i386.changes')
@@ -110,6 +113,8 @@ class LdiUpload_TC(TestCase, CommandLineTester):
         self.tearDown()
         
         self.config = write_config('debinstallrc_acceptance')
+        command = ['ldi', 'configure', '-c', self.config]
+        status, output, error = self.run_command(command)
         command = ['ldi', 'create', '-c', self.config, 'my_repo']
         self.run_command(command)
         
@@ -171,6 +176,9 @@ class LdiUpload_TC(TestCase, CommandLineTester):
 class LdiCreate_TC(TestCase, CommandLineTester):
     def setUp(self):
         self.tearDown()
+        self.config = write_config('debinstallrc_acceptance')
+        command = ['ldi', 'configure', '-c', self.config]
+        status, output, error = self.run_command(command)
         
     def tearDown(self):
         dirname = osp.join(TESTDIR, 'data', 'acceptance')
@@ -179,17 +187,18 @@ class LdiCreate_TC(TestCase, CommandLineTester):
         cleanup_config('debinstallrc_acceptance')
             
     def test_normal_creation(self):
-        config = write_config('debinstallrc_acceptance')
-        command = ['ldi', 'create', '-c', config, 'my_repo']
+        command = ['ldi', 'create', '-c', self.config, 'my_repo']
         status, output, error = self.run_command(command)
         self.assertEquals(status, 0, error)
         base_dir = osp.join(TESTDIR, 'data', 'acceptance')
 
         repodir = osp.join(base_dir, 'repositories', 'my_repo')
         debian = osp.join(repodir, 'debian')
+        sid = osp.join(debian, 'sid')
         incoming = osp.join(repodir, 'incoming')
         self.failUnless(osp.isdir(repodir), 'repo dir not created')
         self.failUnless(osp.isdir(debian), 'debian dir not created')
+        self.failUnless(osp.isdir(sid), 'debian/sid dir not created')
         self.failUnless(osp.isdir(incoming), 'incoming dir not created')
         aptconf = osp.join(base_dir, 'configurations', 'my_repo-apt.conf')
         self.failUnless(osp.isfile(aptconf), 'apt.conf file not created')
@@ -199,6 +208,9 @@ class LdiCreate_TC(TestCase, CommandLineTester):
         config = f.read()
         f.close()
         expected = '''\
+[DEFAULT]
+distribution=sid
+
 [subrepository]
 sources=
 packages=
@@ -207,8 +219,7 @@ packages=
 
         
     def test_no_double_creation(self):
-        config = write_config('debinstallrc_acceptance')
-        command = ['ldi', 'create', '-c', config, 'my_repo']
+        command = ['ldi', 'create', '-c', self.config, 'my_repo']
         status, output, error = self.run_command(command)
         self.assertEquals(status, 0, error)
         status, output, error = self.run_command(command)
@@ -216,8 +227,7 @@ packages=
 
 
     def test_subrepo_creation(self):
-        config = write_config('debinstallrc_acceptance')
-        command = ['ldi', 'create', '-c', config, '-s', 'repo1', '-s', 'repo2', '-p', 'package1', '-p', 'package2', 'my_repo']
+        command = ['ldi', 'create', '-c', self.config, '-s', 'repo1', '-s', 'repo2', '-p', 'package1', '-p', 'package2', 'my_repo']
         status, output, error = self.run_command(command)
         self.assertEquals(status, 0, error)
         base_dir = osp.join(TESTDIR, 'data', 'acceptance')
@@ -226,6 +236,9 @@ packages=
         config = f.read()
         f.close()
         expected = '''\
+[DEFAULT]
+distribution=sid
+
 [subrepository]
 sources=repo1, repo2
 packages=package1, package2
@@ -234,14 +247,12 @@ packages=package1, package2
 
 
     def test_source_without_package(self):
-        config = write_config('debinstallrc_acceptance')
-        command = ['ldi', 'create', '-c', config, '-s', 'repo1', 'my_repo']
+        command = ['ldi', 'create', '-c', self.config, '-s', 'repo1', 'my_repo']
         status, output, error = self.run_command(command)
         self.failIfEqual(status, 0)
         
     def test_package_without_source(self):
-        config = write_config('debinstallrc_acceptance')
-        command = ['ldi', 'create', '-c', config, '-p', 'package1', 'my_repo']
+        command = ['ldi', 'create', '-c', self.config, '-p', 'package1', 'my_repo']
         status, output, error = self.run_command(command)
         self.failIfEqual(status, 0)
         

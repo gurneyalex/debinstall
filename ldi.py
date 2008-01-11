@@ -17,6 +17,7 @@
 """The ldi command provides access to various subcommands to
 manipulate debian packages and repositories"""
 import sys
+import os
 import os.path as osp
 import glob
 
@@ -63,6 +64,11 @@ class Create(LdiCommand):
           'help': "a package to extract from a repository into a "
                   "sub-repository"}
          ),
+        ('-d', '--distribution',
+         {'dest': 'distribution',
+          'help': 'the name of the distribution in the repository',
+          }
+         ),
         ] 
 
 
@@ -71,25 +77,26 @@ class Create(LdiCommand):
         self.repo_name = self.args[0]
         directories = [self.get_config_value(confkey)
                        for confkey in ('destination', 'configurations')]
-        try:
-            sht.ensure_directories(directories)
-            sht.ensure_permissions(directories, self.group, 0775, 0664)
-        except OSError, exc:
-            raise CommandError('Unable to create the directories %s with the '
-                               'correct permissions.\nPlease edit %s and run '
-                               '"ldi configure" as root.'  %
-                               (directories, self.options.configfile))
+##         try:
+##             sht.ensure_directories(directories)
+##             sht.ensure_permissions(directories, self.group, 0775, 0664)
+##         except OSError, exc:
+##             raise CommandError('Unable to create the directories %s with the '
+##                                'correct permissions.\nPlease edit %s and run '
+##                                '"ldi configure" as root.'  %
+##                                (directories, self.options.configfile))
 
             
                 
     def post_checks(self):
-        directories = [self.get_config_value(confkey)
-                       for confkey in ('destination', 'configurations')]
-        sht.ensure_permissions(directories, self.group, 0775, 0664)
+        for confkey in ('destination', 'configurations'):
+            directories = glob.glob(osp.join(self.get_config_value(confkey), '*'))
+            sht.ensure_permissions(directories, self.group, 0775, 0664)
     
     def process(self):
         dest_base_dir = self.get_config_value("destination")
         conf_base_dir = self.get_config_value('configurations')
+        distname = self.options.distribution or self.get_config_value('default_distribution')
         repo_name = self.args[0]
         dest_dir = osp.join(dest_base_dir, repo_name)
         aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repo_name)
@@ -109,9 +116,17 @@ class Create(LdiCommand):
         for directory in [dest_dir,
                           osp.join(dest_dir, 'incoming'),
                           osp.join(dest_dir, 'debian'),
+                          osp.join(dest_dir, 'debian', distname),
                           ]:
             self.logger.info('creation of %s', directory)
             sht.mkdir(directory, self.group, 0775)
+
+        import ldiconffile
+        self.logger.info('writing ldiconf to %s', ldiconf)
+        ldiconffile.writeconf(ldiconf, self.group, 0664,
+                              distname,
+                              self.options.source_repositories,
+                              self.options.packages)
 
         if self.options.aptconffile is not None:
             self.logger.info('copying %s to %s', self.options.aptconffile, aptconf)
@@ -120,11 +135,8 @@ class Create(LdiCommand):
             import aptconffile
             self.logger.info('writing default aptconf to %s', aptconf)
             aptconffile.writeconf(aptconf, self.group, 0664)
-        import ldiconffile
-        self.logger.info('writing ldiconf to %s', ldiconf)
-        ldiconffile.writeconf(ldiconf, self.group, 0664,
-                              self.options.source_repositories,
-                              self.options.packages)
+            self.logger.critical('Please edit apt conf file %s (especially the '
+                             'first section)', aptconf)
 
 class Upload(LdiCommand):
     """upload a new package to the incoming queue of a repository"""
@@ -212,27 +224,32 @@ class Publish(Upload):
         
     def process(self):
         repository = self.args[0]
-        destdir = osp.join(self.get_config_value('destination'),
-                           repository,
+        workdir = osp.join(self.get_config_value('destination'),
+                           repository)
+        destdir = osp.join(workdir,
                            'debian')
-        
-        changes_files = self._get_incoming_changes()
-        
-        self._check_signatures(changes_files)
-        self._run_checkers(changes_files)
-        all_files = self._get_all_package_files(changes_files)
-        self.logger.info('uploading packages to %s', destdir)
-        for filename in all_files:
-            sht.move(filename, destdir, self.group, 0664)
+        cwd = os.getcwd()
+        os.chdir(workdir)
+        try:
+            changes_files = self._get_incoming_changes()
 
-        conf_base_dir = self.get_config_value('configurations')
-        aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repository)
-        apt_ftparchive.clean(destdir)
-        self.logger.info('Running apt-ftparchive generate')
-        apt_ftparchive.generate(destdir, aptconf, self.group)
-        self.logger.info('Running apt-ftparchive release')
-        apt_ftparchive.release(destdir, aptconf, self.group)
-        self._sign_repo(destdir)
+            self._check_signatures(changes_files)
+            self._run_checkers(changes_files)
+            all_files = self._get_all_package_files(changes_files)
+            self.logger.info('uploading packages to %s', destdir)
+            for filename in all_files:
+                sht.move(filename, destdir, self.group, 0664)
+
+            conf_base_dir = self.get_config_value('configurations')
+            aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repository)
+            apt_ftparchive.clean(destdir)
+            self.logger.info('Running apt-ftparchive generate')
+            apt_ftparchive.generate(destdir, aptconf, self.group)
+            self.logger.info('Running apt-ftparchive release')
+            apt_ftparchive.release(destdir, aptconf, self.group)
+            self._sign_repo(destdir)
+        finally:
+            os.chdir(cwd)
 
     def _sign_repo(self, repository):
         if self.get_config_value("sign_repo").lower() in ('no', 'false'):

@@ -18,15 +18,19 @@
 
 import debinstall.shelltools as sht
 
-def writeconf(dest, group, perms, sources, packages):
+def writeconf(dest, group, perms, distribution, sources, packages):
     """generate a ldi.conf file with the appropriate values"""
     fdesc = open(dest, "w")
     fdesc.write(DEFAULT_LDICONF % {'sources': ', '.join(sources),
-                               'packages': ', '.join(packages)})
+                                   'packages': ', '.join(packages),
+                                   'distribution': distribution})
     fdesc.close()
     sht.set_permissions(dest, -1, group, perms)
 
 DEFAULT_LDICONF = '''\
+[DEFAULT]
+distribution=%(distribution)s
+
 [subrepository]
 sources=%(sources)s
 packages=%(packages)s
