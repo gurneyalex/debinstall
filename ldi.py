@@ -34,7 +34,13 @@ def run(args=None):
         args = sys.argv[1:]
     usage = """usage: ldi <command> <options> [arguments]"""
     parser = optparser.OptionParser(usage=usage, version='debinstall %s' % version)
-    for cmd in (Create, Upload, Publish, Archive, Configure):
+    for cmd in (Create,
+                Upload,
+                Publish,
+                #Archive,
+                #Destroy,
+                Configure,
+                ):
         instance = cmd(debug=True)
         instance.register(parser)
     run, options, args = parser.parse_command(args)
