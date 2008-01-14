@@ -115,7 +115,7 @@ class Create(LdiCommand):
 
         if self.options.aptconffile is not None:
             self.logger.info('copying %s to %s', self.options.aptconffile, aptconf)
-            sht.copy(self.options.aptconffile, aptconf)
+            sht.copy(self.options.aptconffile, aptconf, self.group, 0755)
         else:
             import aptconffile
             self.logger.info('writing default aptconf to %s', aptconf)
