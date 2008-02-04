@@ -1,1 +1,2 @@
 debinstallrc etc/debinstall
+src/ldi usr/bin

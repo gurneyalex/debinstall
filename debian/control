@@ -2,15 +2,14 @@ Source: debinstall
 Section: python
 Priority: optional
 Maintainer: Alexandre Fayolle <afayolle@debian.org>
-Build-Depends: debhelper (>= 5.0.38)
-Build-Depends-Indep: python (>=2.4), python-central (>=0.5.6)
+Build-Depends: debhelper (>= 5.0.38),  python (>=2.4), python-central (>=0.5.6)
 XS-Python-Version: current
 Homepage: http://www.logilab.org/projects/debinstall
 Standards-Version: 3.7.3
 
 Package: debinstall
-Architecture: all
-Depends: python, gnupg, apt-utils, python-debian, lintian, linda, python-logilab-common
+Architecture: any
+Depends: python, gnupg, apt-utils, python-debian, lintian, linda, python-logilab-common,  ${shlibs:Depends}
 XB-Python-Version: ${python:Versions}
 Description: tool for managing Debian repositories at Logilab 
  debinstall provides a tool for managing Debian repositories at
@@ -20,5 +19,5 @@ Description: tool for managing Debian repositories at Logilab
   * check the validity of incoming directory
   * clean up of repositories
   * extract sub-repositories by pulling packages and their dependencies
- .
+
 
