@@ -1,22 +1,20 @@
 [debinstall]
 group=devel
-umask=0002
 
 [create]
 destination=/tmp/debian
 configurations=/tmp/debinstall
+default_distribution=sid
 
 [upload]
-check_signature=yes
-run_lintian=yes
-run_linda=yes
+check_signature=no
+checkers=lintian linda
 
 [publish]
 signrepo=yes
 keyid=DF67A55E
-check_signature=yes
-run_lintian=yes
-run_linda=yes
+check_signature=no
+checkers=lintian linda
 
 [archive]
 archivedir=/tmp/debian/archive
