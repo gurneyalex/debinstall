@@ -16,7 +16,6 @@
 
 """ldi.conf manipilation utilities"""
 
-import debinstall.shelltools as sht
 
 def writeconf(dest, group, perms, distribution, sources, packages):
     """generate a ldi.conf file with the appropriate values"""
@@ -25,7 +24,6 @@ def writeconf(dest, group, perms, distribution, sources, packages):
                                    'packages': ', '.join(packages),
                                    'distribution': distribution})
     fdesc.close()
-    sht.set_permissions(dest, -1, group, perms)
 
 DEFAULT_LDICONF = '''\
 [publication]

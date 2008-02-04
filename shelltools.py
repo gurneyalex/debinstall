@@ -33,25 +33,6 @@ def set_permissions(path, uid, gid, mod):
     except OSError, exc:
         raise RuntimeError('Failed to set permissions on %s: %s' % (path, exc))
 
-def ensure_permissions(directories, group, dirperm, fileperm):
-    """recursively set the group and permissions to all files and
-    directories in the directories list
-    
-    group is a group name or a group id
-    dirperm is the permissions to use for directories
-    fileperm is the permissions to use for files"""
-    if type(directories) is str:
-        directories = [directories]
-    gid = getgid(group)
-    for dirname in directories:
-        set_permissions(dirname, -1, gid, dirperm)
-        for dirpath, dirnames, filenames in os.walk(dirname):
-            for subdir in dirnames:
-                subdir = os.path.join(dirpath, subdir)
-                set_permissions(subdir, -1, gid, dirperm)
-            for filename in filenames:
-                filename = os.path.join(dirpath, filename)
-                set_permissions(filename, -1, gid, fileperm)
 
 
 def ensure_directories(directories):
