@@ -17,17 +17,26 @@
 """common interface to linda and lintian"""
 
 from subprocess import Popen, PIPE
-
+import os
 class Checker:
     command = "command"
     options = []
     ok_status = (0, )
     def run(self, changesfile):
+        # we need to run this with normal privileges, otherwise the
+        # perl behind lintian complains loudly
+        euid = os.geteuid()
+        egid = os.getegid()
+        os.seteuid(os.getuid())
+        os.setegid(os.getgid())
         argv = [self.command] + self.options + [changesfile]
         pipe = Popen(argv, stdout=PIPE, stderr=PIPE)
         stdout = pipe.stdout.readlines()
         stderr = pipe.stderr.readlines()
-        return pipe.wait in self.ok_status, stdout, stderr
+        status = pipe.wait()
+        os.seteuid(euid)
+        os.setegid(egid)
+        return status in self.ok_status, stdout, stderr
 
 class LintianChecker(Checker):
     command = "lintian"
