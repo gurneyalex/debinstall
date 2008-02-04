@@ -15,7 +15,8 @@
 build: build-stamp
 build-stamp: 
 	dh_testdir
-	python setup.py -q build 
+	python setup.py  build 
+	cd src && make all
 	touch build-stamp
 
 clean: 
@@ -25,6 +26,7 @@ clean:
 	rm -rf build
 	find . -name "*.pyc" | xargs rm -f
 	rm -f changelog.gz
+	cd src && make clean
 	dh_clean
 
 install: build
@@ -36,27 +38,28 @@ install: build
 	rm -rf debian/debinstall/usr/lib/python*/site-packages/debinstall/tests
 
 
-# Build architecture-independent files here.
-binary-indep: build install
+binary-arch: build install
 	dh_testdir 
 	dh_testroot 
-	dh_install -i
-	dh_pycentral -i
+	dh_install -a
+	dh_pycentral -a
 	gzip -9 -c ChangeLog > changelog.gz
-	dh_installchangelogs -i
-	dh_installexamples -i
-	dh_installdocs -i changelog.gz
-	dh_installman -i
-	dh_link -i
-	dh_compress -i -X.py -X.ini -X.xml -Xtest
-	dh_fixperms -i
-	dh_installdeb -i
-	dh_gencontrol -i 
-	dh_md5sums -i
-	dh_builddeb -i
+	dh_installchangelogs -a
+	dh_installexamples -a
+	dh_installdocs -a changelog.gz
+	dh_installman -a
+	dh_strip -a
+	dh_link -a
+	dh_compress -a -X.py -X.ini -X.xml -Xtest
+	dh_fixperms -a
+	dh_installdeb -a
+	dh_shlibdeps -a
+	dh_gencontrol -a 
+	dh_md5sums -a
+	dh_builddeb -a
 
+binary-indep:
 
-
-binary: binary-indep
-.PHONY: build clean binary binary-indep
+binary: binary-arch
+.PHONY: build clean binary binary-indep binary-arch
 
