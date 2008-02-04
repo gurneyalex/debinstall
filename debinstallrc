@@ -1,6 +1,5 @@
 [debinstall]
 group=devel
-umask=0002
 
 [create]
 destination=/var/www/debian
