@@ -15,14 +15,12 @@
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 """apt.conf file manipulation"""
-import debinstall.shelltools as sht
 
 def writeconf(dest, group, perms, distribution):
     """write a configuration file for use by apt-ftparchive"""
     fdesc = open(dest, "w")
     fdesc.write(APTDEFAULT_APTCONF % {'distribution': distribution}) 
     fdesc.close()
-    sht.set_permissions(dest, -1, group, perms)
     
 
 APTDEFAULT_APTCONF = '''\

@@ -22,7 +22,6 @@ from glob import glob
 import subprocess
 import logging
 
-from debinstall.shelltools import set_permissions
 from debinstall.command import CommandError
 from debinstall.logging_handlers import CONSOLE
 
@@ -44,9 +43,6 @@ def generate(debian_dir, aptconf, group):
     
     status = pipe.wait()
     candidates = ['Packages*', 'Source*', 'Content*', 'Release*']
-    for candidate in candidates:
-        for path in glob(osp.join(debian_dir, candidate)):
-            set_permissions(path, -1, group, 0664)
     if status != 0:
         raise CommandError('apt-ftparchive exited with error status %d'%status)
 
@@ -69,6 +65,5 @@ def sign(debian_dir, key_id, group):
     pipe = subprocess.Popen(command)
     pipe.communicate()
     status = pipe.wait()
-    set_permissions(signed_releasepath, -1, group, 0664)
     if status != 0:
         raise CommandError('gpg exited with status %d' % status)

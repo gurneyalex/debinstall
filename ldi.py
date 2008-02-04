@@ -30,6 +30,9 @@ from debinstall import apt_ftparchive
 from debinstall.__pkginfo__ import version
 
 def run(args=None):
+    if sys.argv[0] == "-c": # launched by binary script using python -c
+        sys.argv[0] = "ldi"
+    os.umask(0002)
     if args is None:
         args = sys.argv[1:]
     usage = """usage: ldi <command> <options> [arguments]"""
@@ -104,7 +107,7 @@ class Create(LdiCommand):
                           osp.join(dest_dir, 'debian', distname),
                           ]:
             self.logger.info('creation of %s', directory)
-            sht.mkdir(directory, self.group, 0775)
+            sht.mkdir(directory, self.group, 02775) # set gid on directories 
 
         import ldiconffile
         self.logger.info('writing ldiconf to %s', ldiconf)
