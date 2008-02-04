@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding: iso-8859-1
 # pylint: disable-msg=W0404
 # Copyright (c) 2003 LOGILAB S.A. (Paris, FRANCE).
 # http://www.logilab.fr/ -- mailto:contact@logilab.fr
