@@ -3,3 +3,5 @@ recursive-include bin *
 recursive-include tests/packages *
 include debinstallrc
 include ChangeLog
+include src/Makefile
+include src/ldi.c
