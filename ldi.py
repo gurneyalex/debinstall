@@ -32,6 +32,9 @@ from debinstall.__pkginfo__ import version
 def run(args=None):
     if sys.argv[0] == "-c": # launched by binary script using python -c
         sys.argv[0] = "ldi"
+        debug = False
+    else:
+        debug = True
     os.umask(0002)
     if args is None:
         args = sys.argv[1:]
@@ -40,11 +43,13 @@ def run(args=None):
     for cmd in (Create,
                 Upload,
                 Publish,
+                List,
                 #Archive,
                 #Destroy,
                 Configure,
+                
                 ):
-        instance = cmd(debug=True)
+        instance = cmd(debug=debug)
         instance.register(parser)
     run, options, args = parser.parse_command(args)
     run(options, args, parser)
@@ -259,14 +264,43 @@ class Configure(LdiCommand):
     arguments = ""
 
     def process(self):
-        directories = [self.get_config_value(confkey)
-                       for confkey in ('destination', 'configurations', 'archivedir')]
         try:
             sht.ensure_directories(directories)
             sht.ensure_permissions(directories, self.group, 0775, 0664)
         except OSError, exc:
             raise CommandError('Unable to create the directories %s with the correct permissions.\nPlease fix this or edit %s'  % (directories, self.options.configfile))
-        self.logger.info('Installation successful')
+        self.logger.info('Configuration successful')
+
+
+class List(LdiCommand):
+    """list all repositories or all packages in a repository"""
+    name = "list"
+    min_args = 0
+    max_args = sys.maxint
+    arguments = "[repository...]"
+
+    def process(self):
+        if self.args: # repositories were specified
+            self.logger.error('not implemented yet')
+        else:
+            repositories = self.get_repo_list()
+            print '\n'.join(repositories)
+
+    def get_repo_list(self):
+        dest_dir, conf_dir = [self.get_config_value(confkey)
+                              for confkey in ('destination', 'configurations',)]
+        repositories = []
+        for dirname in os.listdir(dest_dir):
+            config = osp.join(conf_dir, '%s-%s.conf')
+            for conf in ('apt', 'ldi'):
+                conf_file = config%(dirname, conf)
+                if not osp.isfile(conf_file):
+                    self.logger.debug('cound not find %s', conf_file)
+                    break
+            else:
+                repositories.append(dirname)
+        return repositories
+        
 
     
 class Archive(LdiCommand):
@@ -281,3 +315,5 @@ class Destroy(LdiCommand):
     configuration files"""
     name = 'destroy'
 
+if __name__ == '__main__':
+    run()
