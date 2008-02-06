@@ -9,7 +9,7 @@ Standards-Version: 3.7.3
 
 Package: debinstall
 Architecture: any
-Depends: python, gnupg, apt-utils, python-debian, lintian, linda, python-logilab-common,  ${shlibs:Depends}
+Depends: python, gnupg, apt-utils, python-debian, lintian, linda, python-logilab-common, ${shlibs:Depends}, adduser
 XB-Python-Version: ${python:Versions}
 Description: tool for managing Debian repositories at Logilab 
  debinstall provides a tool for managing Debian repositories at
