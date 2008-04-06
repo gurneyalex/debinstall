@@ -15,8 +15,9 @@
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 import logging
+from logilab.common.logging_ext import ColorFormatter
 
 CONSOLE = logging.StreamHandler()
 CONSOLE.setLevel(logging.DEBUG)
-CONSOLE.setFormatter(logging.Formatter('[%(levelname)-8s] %(name)-10s: %(message)s'))
+CONSOLE.setFormatter(ColorFormatter('[%(levelname)-8s] %(name)-10s: %(message)s'))
 
