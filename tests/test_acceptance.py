@@ -4,7 +4,7 @@ import sys
 import os.path as osp
 import shutil
 
-from logilab.common.testlib import TestCase
+from logilab.common.testlib import TestCase, unittest_main
 
 TESTDIR = osp.abspath(osp.dirname(__file__))
 
@@ -302,4 +302,7 @@ class TestFramework_TC(TestCase, CommandLineTester):
         files = os.listdir(TESTDIR)
         output = output.splitlines(False)
         self.assertSetEqual(set(output), set(files))
-        
+       
+       
+if __name__ == '__main__':
+    unittest_main()

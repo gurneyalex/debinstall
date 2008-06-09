@@ -1,6 +1,6 @@
 import os.path as osp
 
-from logilab.common.testlib import TestCase
+from logilab.common.testlib import TestCase, unittest_main
 
 from debinstall.debfiles import *
 
@@ -53,3 +53,6 @@ class Changes_TC(TestCase):
         self.assertListEquals(wrong_sigs, [self.unsigned.filename,
                                            self.unsigned.get_dsc()])
 
+
+if __name__ == '__main__':
+    unittest_main()
