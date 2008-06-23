@@ -1,0 +1,7 @@
+==========
+debinstall
+==========
+
+Tool to manipulate Debian package repositories.
+
+`man ldi` and read documentation in doc/
