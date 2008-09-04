@@ -39,7 +39,8 @@ def run(args=None):
     if args is None:
         args = sys.argv[1:]
     usage = """usage: ldi <command> <options> [arguments]"""
-    parser = optparser.OptionParser(usage=usage, version='debinstall %s' % version)
+    parser = optparser.OptionParser(usage=usage,
+                                    version='debinstall %s' % version)
     for cmd in (Create,
                 Upload,
                 Publish,
@@ -51,8 +52,8 @@ def run(args=None):
                 ):
         instance = cmd(debug=debug)
         instance.register(parser)
-    run, options, args = parser.parse_command(args)
-    run(options, args, parser)
+    runfunc, options, args = parser.parse_command(args)
+    runfunc(options, args, parser)
 
 
 class Create(LdiCommand):
@@ -89,7 +90,8 @@ class Create(LdiCommand):
     def process(self):
         dest_base_dir = self.get_config_value("destination")
         conf_base_dir = self.get_config_value('configurations')
-        distname = self.options.distribution or self.get_config_value('default_distribution')
+        distname = self.options.distribution or \
+                   self.get_config_value('default_distribution')
         repo_name = self.args[0]
         dest_dir = osp.join(dest_base_dir, repo_name)
         aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repo_name)
@@ -114,7 +116,7 @@ class Create(LdiCommand):
             self.logger.info('creation of %s', directory)
             sht.mkdir(directory, self.group, 02775) # set gid on directories 
 
-        import ldiconffile
+        from debinstall import ldiconffile
         self.logger.info('writing ldiconf to %s', ldiconf)
         ldiconffile.writeconf(ldiconf, self.group, 0664,
                               distname,
@@ -122,10 +124,11 @@ class Create(LdiCommand):
                               self.options.packages)
 
         if self.options.aptconffile is not None:
-            self.logger.info('copying %s to %s', self.options.aptconffile, aptconf)
+            self.logger.info('copying %s to %s',
+                             self.options.aptconffile, aptconf)
             sht.copy(self.options.aptconffile, aptconf, self.group, 0755)
         else:
-            import aptconffile
+            from debinstall import aptconffile
             self.logger.info('writing default aptconf to %s', aptconf)
             aptconffile.writeconf(aptconf, self.group, 0664, distname)
             self.logger.critical('Please edit apt conf file %s (especially the '
@@ -149,7 +152,8 @@ class Upload(LdiCommand):
                 try:
                     fdesc = open(candidate)
                 except IOError, exc:
-                    raise CommandError('Cannot read %s from %s: %s' % (candidate, filename, exc))
+                    raise CommandError('Cannot read %s from %s: %s' % \
+                                       (candidate, filename, exc))
             file_list += all_files
         return file_list
 
@@ -293,7 +297,7 @@ class List(LdiCommand):
         for dirname in os.listdir(dest_dir):
             config = osp.join(conf_dir, '%s-%s.conf')
             for conf in ('apt', 'ldi'):
-                conf_file = config%(dirname, conf)
+                conf_file = config % (dirname, conf)
                 if not osp.isfile(conf_file):
                     self.logger.debug('cound not find %s', conf_file)
                     break
