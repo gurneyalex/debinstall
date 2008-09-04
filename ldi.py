@@ -222,12 +222,22 @@ class Publish(Upload):
                                'available repositories.' % sys.argv[0])
         changes_files = self.args[1:]
         if changes_files:
+            changes = []
             for change in changes_files:
                 if osp.isabs(change):
                     raise CommandError('%s is not a relative path' % change)
-            return [osp.join(incoming, change) for change in changes_files]
+                elif not osp.isfile(change):
+                    msg = "%s is not available in %s's incoming queue" % \
+                          (change, self.args[0])
+                    raise CommandError(msg)
+                elif not change.endswith('.changes'):
+                    raise CommandError('%s is not a changes file' % changes)
+                else:
+                    changes.append(osp.join(incoming, change))
         else:
-            return glob.glob(osp.join(incoming, '*.changes'))
+            changes = glob.glob(osp.join(incoming, '*.changes'))
+            
+        return changes
         
         
     def process(self):
