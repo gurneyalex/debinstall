@@ -186,8 +186,6 @@ class LdiUpload_TC(TestCase, CommandLineTester):
     def test_upload_wrong_md5(self):
         self.skip('unwritten test')
 
-    def test_upload_lintian_error(self):
-        self.skip('unwritten test')
 
 class LdiCreate_TC(TestCase, CommandLineTester):
     def setUp(self):
