@@ -14,10 +14,19 @@
 # this program; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+import os.path as osp
 import logging
 from logilab.common.logging_ext import ColorFormatter
 
 CONSOLE = logging.StreamHandler()
-CONSOLE.setLevel(logging.DEBUG)
-CONSOLE.setFormatter(ColorFormatter('[%(levelname)-8s] %(name)-10s: %(message)s'))
+formatter = ColorFormatter('[%(levelname)-8s] %(name)-10s: %(message)s')
+CONSOLE.setFormatter(formatter)
+if osp.isdir(osp.join(osp.dirname(__file__), '.hg')):
+    CONSOLE.setLevel(logging.DEBUG)
+    logger = logging.getLogger('root')
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(CONSOLE)
+    logger.debug('Using development version')
+else:
+    CONSOLE.setLevel(logging.INFO)
 
