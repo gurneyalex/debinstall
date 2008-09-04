@@ -298,7 +298,7 @@ class Configure(LdiCommand):
         try:
             sht.ensure_directories(directories)
             for dirname in directories:
-                sht.set_permissions(dirname, self.group, 0775, 0664)
+                sht.set_permissions(dirname, -1, self.group, 0775)
         except OSError:
             raise CommandError('Unable to create the directories %s with the '
                                'correct permissions.\n'
