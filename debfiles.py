@@ -43,7 +43,8 @@ class Changes:
         return all_files
 
     def check_sig(self, out_wrong=None):
-        """check the gpg signature of the changes file and the dsc file (if it exists)
+        """check the gpg signature of the changes file and the dsc file
+        (if it exists)
 
         return: True if all checked sigs are correct, False otherwise.
         out_wrong can be a list, in which case the full paths to the
@@ -68,7 +69,7 @@ class Changes:
         for checker in ALL_CHECKERS:
             if checker.command not in checkers:
                 continue
-            success, stdout, stderr = checker.run(self.filename)
+            success, _, stderr = checker.run(self.filename)
             if not success:
                 out_wrong += stderr
             status = status and success
