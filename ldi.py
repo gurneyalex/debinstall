@@ -150,6 +150,7 @@ class Upload(LdiCommand):
             for candidate in all_files:
                 try:
                     fdesc = open(candidate)
+                    fdesc.close()
                 except IOError, exc:
                     raise CommandError('Cannot read %s from %s: %s' % \
                                        (candidate, filename, exc))
