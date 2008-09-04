@@ -1,0 +1,43 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.8
+Date: Thu, 04 Sep 2008 19:34:00 +0200
+Source: package1
+Binary: package1
+Architecture: source all
+Version: 1.0-2
+Distribution: unstable
+Urgency: low
+Maintainer: Alexandre Fayolle <alexandre.fayolle@logilab.fr>
+Changed-By: Alexandre Fayolle <afayolle@debian.org>
+Description: 
+ package1   - dummy package to test debinstall
+Changes: 
+ package1 (1.0-2) unstable; urgency=low
+ .
+   * fixed stuff
+Checksums-Sha1: 
+ e9a38f8e5a1de56e717faf7fd81982ac4d38a6f1 1225 package1_1.0-2.dsc
+ ce8f2c878af0e233876af48e14a9da37a6b36f9d 1323 package1_1.0-2.diff.gz
+ 2aebd54b796561a6146eb4bee2290c44eacbad96 1930 package1_1.0-2_all.deb
+Checksums-Sha256: 
+ 41ecb67fe162601de2509a64886f71f9f9a11b88e094f9f3459b61fd9117403d 1225 package1_1.0-2.dsc
+ 2d3e5293388bb707e15b1f2578d9c7605ca9f6c1b4f56244ca16a858cc8c6034 1323 package1_1.0-2.diff.gz
+ 9abe2a6caa91a4cce51c19b50dd0014fd132e5b06a172d7433205f56959fca7b 1930 package1_1.0-2_all.deb
+Files: 
+ e784af13514fc7f21ae3852e345f6412 1225 misc extra package1_1.0-2.dsc
+ 6e2f6ea83df6bade7f6c842bc593cd16 1323 misc extra package1_1.0-2.diff.gz
+ ab94ab6737f42e1667e9cdcaf3327610 1930 misc extra package1_1.0-2_all.deb
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iQEVAwUBSMAcXl6T+PKoJ87eAQL7nwf/fQLuiUVWottq6YocaaqnbbTHgA5tfnMu
+PPZKXwG+4YBws1ESHKdnUFDJfckqzUuLJcQMT4wLVGX1GLoR8YGzSyslqBnpPKip
+QOjWerJoR1Zt7XzjQix0Trn6afjwY27pnncwxIKV3fgKmIyxYAJD3ulNgE74UnMa
+KqrhiQz69ACdKjCGZ0LRMEDXg46/uDMEAfKK1b6bztKMsCXo79Aygrh26WTuZR2P
+jphG8b4fliPRWYCdF02C3l1ESYd3/+/GuMhHzRmCJfNIRnr1CVkWc4iRhjHj/yvQ
+/dvOZp7MYE2RzppcF20KTya7qyBBvsgTOIdfn9238WLkwiMx87GLGg==
+=fQkJ
+-----END PGP SIGNATURE-----

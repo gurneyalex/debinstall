@@ -1,0 +1,56 @@
+ dpkg-buildpackage -rfakeroot -D -us -uc
+dpkg-buildpackage : définir CFLAGS à la valeur par défaut : -g -O2
+dpkg-buildpackage : définir CPPFLAGS à la valeur par défaut : 
+dpkg-buildpackage : définir LDFLAGS à la valeur par défaut : 
+dpkg-buildpackage : définir FFLAGS à la valeur par défaut : -g -O2
+dpkg-buildpackage : définir CXXFLAGS à la valeur par défaut : -g -O2
+dpkg-buildpackage: paquet source package1
+dpkg-buildpackage: version source 1.0-2
+dpkg-buildpackage: source changé par Alexandre Fayolle <afayolle@debian.org>
+dpkg-buildpackage: architecture hôte i386
+ fakeroot debian/rules clean
+dh_testdir
+dh_testroot
+rm -f build-stamp configure-stamp
+dh_clean 
+ dpkg-source -b package1-1.0
+dpkg-source: info: utilisation du format source « 1.0 »
+dpkg-source: info: construction de package1 à partir de package1_1.0.orig.tar.gz
+dpkg-source: info: construction de package1 dans package1_1.0-2.diff.gz
+dpkg-source: info: construction de package1 dans package1_1.0-2.dsc
+ debian/rules build
+dh_testdir
+touch configure-stamp
+dh_testdir
+touch build-stamp
+ fakeroot debian/rules binary
+dh_testdir
+dh_testroot
+dh_clean -k 
+dh_installdirs
+dh_testdir
+dh_testroot
+dh_installchangelogs 
+dh_installdocs
+dh_link
+dh_compress
+dh_fixperms
+dh_installdeb
+dh_shlibdeps
+dh_gencontrol
+dh_md5sums
+dh_builddeb
+dpkg-deb : construction du paquet « package1 » dans « ../package1_1.0-2_all.deb ».
+ dpkg-genchanges  >../package1_1.0-2_i386.changes
+dpkg-genchanges: pas d'inclusion du code source original dans l'envoi (« upload »)
+dpkg-buildpackage: envoi d'un binaire et du fichier diff (aucune inclusion du code source d'origine)
+Now running lintian...
+W: package1 source: out-of-date-standards-version 3.7.2 (current is 3.8.0)
+W: package1 source: changelog-should-mention-nmu
+W: package1 source: source-nmu-has-incorrect-version-number 1.0-2
+Finished running lintian.
+Now signing changes and any dsc files...
+ signfile package1_1.0-2.dsc D67A55E
+gpg: « D67A55E » a été ignoré: la clé secrète n'est pas disponible
+gpg: [stdin]: clearsign failed: la clé secrète n'est pas disponible
+debsign: gpg error occurred!  Aborting....
