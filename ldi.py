@@ -178,16 +178,6 @@ class Upload(LdiCommand):
                                '\n'.join(failed))
         return True
 
-    def _run_checkers(self, changes_files):
-        checkers = self.get_config_value('checkers').split()
-        failed = []
-        for filename in changes_files:
-            Changes(filename).run_checkers(checkers, failed)
-        if failed:
-            raise CommandError('The following packaging errors were found:\n' + \
-                               '\n'.join(failed))
-    
-        
     def process(self):
         repository = self.args[0]
         destdir = osp.join(self.get_config_value('destination'),
@@ -239,6 +229,18 @@ class Publish(Upload):
             
         return changes
         
+    def _run_checkers(self, changes_files):
+        checkers = self.get_config_value('checkers').split()
+        failed = []
+        for filename in changes_files:
+            try:                
+                Changes(filename).run_checkers(checkers, failed)
+            except (Exception,), exc:
+                raise CommandError('%s is not a changes file [%s]' % (filename, exc))
+        if failed:
+            raise CommandError('The following packaging errors were found:\n' +\
+                               '\n'.join(failed))
+    
         
     def process(self):
         repository = self.args[0]
