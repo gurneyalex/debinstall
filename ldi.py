@@ -145,7 +145,6 @@ class Upload(LdiCommand):
     def _get_all_package_files(self, changes_files):
         file_list = []
         for filename in changes_files:
-            dirname = osp.dirname(filename)
             self.logger.info('preparing upload of %s', filename)
             all_files = Changes(filename).get_all_files()
             for candidate in all_files:
