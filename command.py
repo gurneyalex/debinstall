@@ -59,8 +59,8 @@ class Command(object):
             sys.exit(1)
             
     def add_options(self, option_parser):
-        for short, long, kwargs in self.opt_specs + self.global_options:
-            option_parser.add_option(short, long, **kwargs)
+        for shortname, longname, kwargs in self.opt_specs + self.global_options:
+            option_parser.add_option(shortname, longname, **kwargs)
         option_parser.min_args = self.min_args
         option_parser.max_args = self.max_args
         option_parser.prog  = "%s %s" % (os.path.basename(sys.argv[0]),
