@@ -29,21 +29,27 @@ class Checker:
         egid = os.getegid()
         os.seteuid(os.getuid())
         os.setegid(os.getgid())
+        status, stdout, stderr = self.do_run(changesfile)
+        os.seteuid(euid)
+        os.setegid(egid)
+        return status in self.ok_status, stdout, stderr
+
+    def do_run(self, changesfile):
         argv = [self.command] + self.options + [changesfile]
         pipe = Popen(argv, stdout=PIPE, stderr=PIPE)
         stdout = pipe.stdout.readlines()
         stderr = pipe.stderr.readlines()
         status = pipe.wait()
-        os.seteuid(euid)
-        os.setegid(egid)
-        return status in self.ok_status, stdout, stderr
+        return status, stdout, stderr
 
 class LintianChecker(Checker):
     command = "lintian"
+    ok_status = (0, 2)
+    
 
 class LindaChecker(Checker):
     command = "linda"
-    error_status = (0, 1,)
+    ok_status = (0, 1,)
 
 
 ALL_CHECKERS = [LintianChecker(),
