@@ -338,17 +338,17 @@ class List(LdiCommand):
         
 
     
-class Archive(LdiCommand):
-    """cleanup a repository by moving old unused packages to an
-    archive directory"""
-    name = "archive"
+## class Archive(LdiCommand):
+##     """cleanup a repository by moving old unused packages to an
+##     archive directory"""
+##     name = "archive"
 
     
 
-class Destroy(LdiCommand):
-    """completely remove a repository, its packages and the
-    configuration files"""
-    name = 'destroy'
+## class Destroy(LdiCommand):
+##     """completely remove a repository, its packages and the
+##     configuration files"""
+##     name = 'destroy'
 
 if __name__ == '__main__':
     run()
