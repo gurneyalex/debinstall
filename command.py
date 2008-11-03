@@ -41,7 +41,7 @@ class Command(object):
         if debug:
             self.logger.setLevel(logging.DEBUG)
         self.logger.addHandler(CONSOLE)
-        
+
     def register(self, option_parser):
         option_parser.add_command(self.name,
                                   (self.run, self.add_options),
@@ -78,20 +78,20 @@ class Command(object):
 
 class LdiCommand(Command):
     """provide command HELP here, on a single line"""
-    
+
     global_options = [
         ('-c', '--config',
          {'dest': 'configfile',
           'default':'/etc/debinstall/debinstallrc',
           'help': 'configuration file (default: /etc/debinstall/debinstallrc)'}
-         ),                  
+         ),
         ]
 
     def __init__(self, debug=False):
         Command.__init__(self, debug)
         self._parser = None
         self._repo_parser = None
-        
+
     def pre_checks(self, option_parser):
         #os.umask(self.get_config_value('umask'))
         pass
@@ -99,7 +99,7 @@ class LdiCommand(Command):
     def _get_ldi_conf_path(self, reponame):
         configdir = self.get_config_value("configurations")
         return  osp.join(configdir, '%s-ldi.conf' % reponame)
-    
+
     def get_repo_config_value(self, reponame, option):
         if self.options is None:
             raise RuntimeError("No configuration file available yet")
@@ -115,11 +115,10 @@ class LdiCommand(Command):
                     value = self._repo_parser.get(section, option)
                     self.logger.debug('value for %s: %s', option, value)
                     return value
-                
+
         message = "No option %s in sections %s of %s" % (option, sections,
                                         self._get_ldi_conf_path(reponame))
         raise CommandError(message)
-        
 
     def get_config_value(self, option):
         if self.options is None:
@@ -144,7 +143,7 @@ class LdiCommand(Command):
     @property
     def group(self):
         return self.get_config_value('group')
-    
+
 
 class CommandError(Exception):
     """raised to exit the program without a traceback"""
