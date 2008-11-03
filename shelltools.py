@@ -33,20 +33,18 @@ def set_permissions(path, uid, gid, mod):
     except OSError, exc:
         raise RuntimeError('Failed to set permissions on %s: %s' % (path, exc))
 
-
-
 def ensure_directories(directories):
     """create each directory in the directories (a string or a list of
     strings), with the missing directories in between"""
     if type(directories) is str:
         directories = [directories]
     for dirname in directories:
-        if not os.path.isdir(dirname):
+        if not osp.isdir(dirname):
             os.makedirs(dirname)
 
 def getgid(group):
     """return the group id for group.
-    
+
     group can be a group name or or a goup id (in which case it is
     returned unchanged)
     """
@@ -62,19 +60,17 @@ def copy(source, dest, group, perms):
         dest = osp.join(dest, osp.basename(source))
     shutil.copy(source, dest)
     set_permissions(dest, -1, group, perms)
-        
+
 def move(source, dest, group, perms):
     """move source to dest using shutil.move and set the permissions"""
     if osp.isdir(dest):
         dest = osp.join(dest, osp.basename(source))
     shutil.move(source, dest)
     set_permissions(dest, -1, group, perms)
-        
-
 
 def mkdir(path, group, perms):
     """create a directory with the specified permissions"""
     gid = getgid(group)
     os.mkdir(path)
     set_permissions(path, -1, gid, perms)
-    
+
