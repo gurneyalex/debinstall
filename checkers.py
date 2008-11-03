@@ -18,6 +18,8 @@
 
 from subprocess import Popen, PIPE
 import os
+
+
 class Checker:
     command = "command"
     options = []
@@ -45,13 +47,7 @@ class Checker:
 class LintianChecker(Checker):
     command = "lintian"
     ok_status = (0, 2)
-    
-
-class LindaChecker(Checker):
-    command = "linda"
-    ok_status = (0, 1,)
 
 
 ALL_CHECKERS = [LintianChecker(),
-                LindaChecker(),
                 ]
