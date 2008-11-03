@@ -40,13 +40,11 @@ def generate(debian_dir, aptconf, group):
     command = ['apt-ftparchive', 'generate', aptconf]
     logger.info('running %s$ %s', os.getcwd(), ' '.join(command))
     pipe = subprocess.Popen(command)
-    
     status = pipe.wait()
-    candidates = ['Packages*', 'Source*', 'Content*', 'Release*']
     if status != 0:
         raise CommandError('apt-ftparchive exited with error status %d'%status)
 
-def release(debian_dir, aptconf, group):    
+def release(debian_dir, aptconf, group):
     release = open(osp.join(debian_dir, 'Release'), 'w')
     command = ['apt-ftparchive', '-c', aptconf, 'release', debian_dir]
     logger.info('running %s$ %s', os.getcwd(), ' '.join(command))
@@ -55,7 +53,6 @@ def release(debian_dir, aptconf, group):
     status = pipe.wait()
     if status != 0:
         raise CommandError('apt-ftparchive exited with error status %d' % status)
-    
 
 def sign(debian_dir, key_id, group):
     releasepath = osp.join(debian_dir, 'Release')
