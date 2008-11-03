@@ -8,13 +8,13 @@ default_distribution=sid
 
 [upload]
 check_signature=yes
-checkers=lintian linda
+checkers=lintian
 
 [publish]
 sign_repo=no
 keyid=FFFFFF
 check_signature=yes
-checkers=lintian linda
+checkers=lintian
 
 [archive]
 archivedir=/var/www/debian/archive
