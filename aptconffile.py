@@ -16,23 +16,23 @@
 
 """apt.conf file manipulation"""
 
-def writeconf(dest, group, perms, distribution):
+def writeconf(dest, group, perms, distribution, origin):
     """write a configuration file for use by apt-ftparchive"""
     fdesc = open(dest, "w")
-    fdesc.write(APTDEFAULT_APTCONF % {'distribution': distribution}) 
+    fdesc.write(APTDEFAULT_APTCONF % {'distribution': distribution,
+                                      'origin': origin})
     fdesc.close()
-    
 
 APTDEFAULT_APTCONF = '''\
 APT {
   FTPArchive {
     Release {
-        Origin "WRITEME";
-        Label  "WRITEME";
+        Origin "%(origin)s";
+        Label  "Debian packages Repository";
         Suite  "%(distribution)s";
-        Description "WRITEME";
+        Description "created by ldi utility";
     };
-  };     
+  };
 };
 
 Default {
@@ -42,9 +42,8 @@ Default {
         FileMode 0664;
 };
 
-
 Dir {
-        ArchiveDir "debian";
+        ArchiveDir "dists";
 };
 
 TreeDefault {

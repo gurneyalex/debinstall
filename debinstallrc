@@ -1,5 +1,6 @@
 [debinstall]
 group=devel
+origin=Logilab S.A.
 
 [create]
 destination=/var/www/debian

@@ -48,7 +48,6 @@ def run(args=None):
                 #Archive,
                 #Destroy,
                 Configure,
-                
                 ):
         instance = cmd(debug=debug)
         instance.register(parser)
@@ -84,10 +83,10 @@ class Create(LdiCommand):
           'help': 'the name of the distribution in the repository',
           }
          ),
-        ] 
-                
-    
+        ]
+
     def process(self):
+        origin = self.get_config_value("origin")
         dest_base_dir = self.get_config_value("destination")
         conf_base_dir = self.get_config_value('configurations')
         distname = self.options.distribution or \
@@ -96,17 +95,6 @@ class Create(LdiCommand):
         dest_dir = osp.join(dest_base_dir, repo_name)
         aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repo_name)
         ldiconf = osp.join(conf_base_dir, '%s-ldi.conf' % repo_name)
-        if osp.isdir(dest_dir) or osp.isfile(aptconf) or osp.isfile(ldiconf):
-            raise CommandError('A repository with that name already exists.')
-
-        if self.options.source_repositories:
-            if not self.options.packages:
-                message = 'No packages to extract from the source repositories'
-                raise CommandError(message)
-        if self.options.packages:
-            if not self.options.source_repositories:
-                message = 'No source repositories for package extraction'
-                raise CommandError(message)
 
         for directory in [dest_dir,
                           osp.join(dest_dir, 'incoming'),
@@ -116,23 +104,36 @@ class Create(LdiCommand):
             self.logger.info('creation of %s', directory)
             sht.mkdir(directory, self.group, 02775) # set gid on directories 
 
-        from debinstall import ldiconffile
-        self.logger.info('writing ldiconf to %s', ldiconf)
-        ldiconffile.writeconf(ldiconf, self.group, 0664,
-                              distname,
-                              self.options.source_repositories,
-                              self.options.packages)
-
-        if self.options.aptconffile is not None:
-            self.logger.info('copying %s to %s',
-                             self.options.aptconffile, aptconf)
-            sht.copy(self.options.aptconffile, aptconf, self.group, 0755)
+        if osp.isfile(aptconf) or osp.isfile(ldiconf):
+            self.logger.error("The repository '%s' already exists" % repo_name)
+            self.logger.info("You can edit the aptfile %s to add new sections"
+                             % aptconf)
         else:
-            from debinstall import aptconffile
-            self.logger.info('writing default aptconf to %s', aptconf)
-            aptconffile.writeconf(aptconf, self.group, 0664, distname)
-            self.logger.critical('Please edit apt conf file %s (especially the '
-                             'first section)', aptconf)
+            if self.options.source_repositories:
+                if not self.options.packages:
+                    message = 'No packages to extract from the source repositories'
+                    raise CommandError(message)
+            if self.options.packages:
+                if not self.options.source_repositories:
+                    message = 'No source repositories for package extraction'
+                    raise CommandError(message)
+
+            from debinstall import ldiconffile
+            self.logger.info('writing ldiconf to %s', ldiconf)
+            ldiconffile.writeconf(ldiconf, self.group, 0664,
+                                  distname,
+                                  self.options.source_repositories,
+                                  self.options.packages)
+
+            if self.options.aptconffile is not None:
+                self.logger.info('copying %s to %s',
+                                 self.options.aptconffile, aptconf)
+                sht.copy(self.options.aptconffile, aptconf, self.group, 0755)
+            else:
+                from debinstall import aptconffile
+                self.logger.info('writing default aptconf to %s', aptconf)
+                aptconffile.writeconf(aptconf, self.group, 0664, distname, origin)
+                self.logger.info('An aptconf file %s has been created.' % aptconf)
 
 class Upload(LdiCommand):
     """upload a new package to the incoming queue of a repository"""
@@ -160,12 +161,13 @@ class Upload(LdiCommand):
     def _check_signatures(self, changes_files):
         """return True if the changes files and appropriate dsc files
         are correctly signed.
-        
+
         raise CommandError otherwise.
         """
         if self.get_config_value('check_signature').lower() in ('no', 'false'):
             self.logger.info("Signature checks skipped")
             return True
+
         failed = []
         for filename in changes_files:
             try:
@@ -240,8 +242,7 @@ class Publish(Upload):
         if failed:
             raise CommandError('The following packaging errors were found:\n' +\
                                '\n'.join(failed))
-    
-        
+
     def process(self):
         repository = self.args[0]
         workdir = osp.join(self.get_config_value('destination'),
@@ -252,6 +253,7 @@ class Publish(Upload):
                                                       'distribution'))
         cwd = os.getcwd()
         os.chdir(workdir)
+
         try:
             changes_files = self._get_incoming_changes()
 
@@ -335,9 +337,8 @@ class List(LdiCommand):
             else:
                 repositories.append(dirname)
         return repositories
-        
 
-    
+
 ## class Archive(LdiCommand):
 ##     """cleanup a repository by moving old unused packages to an
 ##     archive directory"""
