@@ -143,6 +143,13 @@ class Upload(LdiCommand):
     min_args = 2
     max_args = sys.maxint
     arguments = "repository package.changes [...]"
+    opt_specs = [ ('-r', '--remove',
+                   {'dest': 'remove',
+                    'action': "store_true",
+                    'default': False,
+                    'help': 'remove debian changes file when uploading',
+                   }),
+                ]
 
 
     def _get_all_package_files(self, changes_files):
