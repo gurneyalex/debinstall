@@ -210,8 +210,8 @@ class Publish(Upload):
     name = "publish"
     min_args = 1
     max_args = sys.maxint
-    argument = "repository [package.changes...]"
-
+    arguments = "repository [package.changes...]"
+    opt_specs = []
 
     def _get_incoming_changes(self):
         incoming = osp.join(self.get_config_value('destination'),
