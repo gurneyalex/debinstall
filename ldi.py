@@ -151,23 +151,21 @@ class Upload(LdiCommand):
                    }),
                 ]
 
-
-    def _get_all_package_files(self, changes_files):
+    def _get_all_package_files(self, changes_file):
         file_list = []
-        for filename in changes_files:
-            self.logger.info('preparing upload of %s', filename)
-            all_files = Changes(filename).get_all_files()
-            for candidate in all_files:
-                try:
-                    fdesc = open(candidate)
-                    fdesc.close()
-                except IOError, exc:
-                    raise CommandError('Cannot read %s from %s: %s' % \
-                                       (candidate, filename, exc))
-            file_list += all_files
+        self.logger.info('preparing upload of %s', changes_file)
+        all_files = Changes(changes_file).get_all_files()
+        for candidate in all_files:
+            try:
+                fdesc = open(candidate)
+                fdesc.close()
+            except IOError, exc:
+                raise CommandError('Cannot read %s from %s: %s' % \
+                                   (candidate, changes_file, exc))
+        file_list += all_files
         return file_list
 
-    def _check_signatures(self, changes_files):
+    def _check_signature(self, changes_file):
         """return True if the changes files and appropriate dsc files
         are correctly signed.
 
@@ -178,12 +176,11 @@ class Upload(LdiCommand):
             return True
 
         failed = []
-        for filename in changes_files:
-            try:
-                Changes(filename).check_sig(failed)
-            except (Exception,), exc:
-                raise CommandError('%s is not a changes file [%s]' % (filename, exc))
-            
+        try:
+            Changes(changes_file).check_sig(failed)
+        except (Exception,), exc:
+            raise CommandError('%s is not a changes file [%s]' % (filename, exc))
+
         if failed:
             raise CommandError('The following files are not signed:\n' + \
                                '\n'.join(failed))
@@ -191,19 +188,24 @@ class Upload(LdiCommand):
 
     def process(self):
         repository = self.args[0]
-        destdir = osp.join(self.get_config_value('destination'),
-                           repository,
-                           'incoming')
-        if not osp.isdir(destdir):
-            raise CommandError('The repository %s does not exist. \n'
-                               'Use `ldi list` to get the list of '
-                               'available repositories.' % repository)
-        changes_files = self.args[1:]
-        self._check_signatures(changes_files)
-        all_files = self._get_all_package_files(changes_files)
-        self.logger.info('uploading packages to %s', destdir)
-        for filename in all_files:
-            sht.copy(filename, destdir, self.group, 0775)
+        for filename in self.args[1:]:
+            distrib = Changes(filename).changes['Distribution']
+            destdir = osp.join(self.get_config_value('destination'),
+                               repository, 'incoming', distrib)
+            self.logger.info('uploading packages to %s for distribution %s',
+                             destdir, distrib)
+            if not osp.isdir(destdir):
+                raise CommandError("The repository '%s' is not fully created. \n"
+                                   "Use `ldi list` to get the list of "
+                                   "available repositories." % destdir)
+            self._check_signature(filename)
+            all_files = self._get_all_package_files(filename)
+            if self.options.remove:
+                shellutil = sht.move
+            else:
+                shellutil = sht.copy
+            for filename in all_files:
+                shellutil(filename, destdir, self.group, 0775)
 
 class Publish(Upload):
     """process the incoming queue of a repository"""
@@ -214,40 +216,39 @@ class Publish(Upload):
     opt_specs = []
 
     def _get_incoming_changes(self):
-        incoming = osp.join(self.get_config_value('destination'),
-                            self.args[0],
-                            'incoming')
-        if not osp.isdir(incoming):
-            raise CommandError('The repository %s does not exist. \n'
-                               'Use `ldi list` to get the list of '
-                               'available repositories.' % sys.argv[0])
-        changes_files = self.args[1:]
-        if changes_files:
-            changes = []
-            for change in changes_files:
-                if osp.isabs(change):
-                    raise CommandError('%s is not a relative path' % change)
-                elif not osp.isfile(change):
-                    msg = "%s is not available in %s's incoming queue" % \
-                          (change, self.args[0])
+        repository = self.args[0]
+        changes = []
+        for changes_file in self.args[1:]:
+            for filename in glob.glob(osp.join('incoming', '**', changes_file)):
+                distrib = Changes(filename).changes['Distribution']
+                incoming = osp.join(self.get_config_value('destination'),
+                                    self.args[0], 'incoming', distrib)
+                if not osp.isdir(incoming):
+                    raise CommandError("The repository '%s' is not fully created. \n"
+                                       "Use `ldi list` to get the list of "
+                                       "available repositories." % incoming)
+                if osp.isabs(filename):
+                    raise CommandError('%s is not a relative path' % filename)
+                elif not osp.isfile(filename):
+                    msg = "%s is not available in %s %s's incoming queue" % \
+                          (filename, distrib, self.args[0])
                     raise CommandError(msg)
-                elif not change.endswith('.changes'):
-                    raise CommandError('%s is not a changes file' % changes)
+                elif not filename.endswith('.changes'):
+                    raise CommandError('%s is not a changes file' % filename)
                 else:
-                    changes.append(osp.join(incoming, change))
+                    changes.append(osp.join(incoming, distrib, filename))
         else:
-            changes = glob.glob(osp.join(incoming, '*.changes'))
-            
+            changes = glob.glob(osp.join('incoming', '**', '*.changes'))
         return changes
-        
-    def _run_checkers(self, changes_files):
+
+    def _run_checkers(self, changes_file):
         checkers = self.get_config_value('checkers').split()
         failed = []
-        for filename in changes_files:
-            try:                
-                Changes(filename).run_checkers(checkers, failed)
-            except (Exception,), exc:
-                raise CommandError('%s is not a changes file [%s]' % (filename, exc))
+        try:
+            Changes(changes_file).run_checkers(checkers, failed)
+        except (Exception,), exc:
+            raise CommandError('%s is not a changes file [%s]'
+                               % (changes_file, exc))
         if failed:
             raise CommandError('The following packaging errors were found:\n' +\
                                '\n'.join(failed))
@@ -256,31 +257,33 @@ class Publish(Upload):
         repository = self.args[0]
         workdir = osp.join(self.get_config_value('destination'),
                            repository)
-        destdir = osp.join(workdir,
-                           'debian',
-                           self.get_repo_config_value(repository,
-                                                      'distribution'))
         cwd = os.getcwd()
         os.chdir(workdir)
 
         try:
             changes_files = self._get_incoming_changes()
+            for filename in changes_files:
+                distrib = Changes(filename).changes['Distribution']
+                destdir = osp.join(self.get_config_value('destination'),
+                                   repository, 'dists', distrib)
+                self.logger.info('publishing packages to %s', destdir)
+                self._check_signature(filename)
+                self._run_checkers(filename)
 
-            self._check_signatures(changes_files)
-            self._run_checkers(changes_files)
-            all_files = self._get_all_package_files(changes_files)
-            self.logger.info('uploading packages to %s', destdir)
-            for filename in all_files:
-                sht.move(filename, destdir, self.group, 0664)
+                all_files = self._get_all_package_files(filename)
+                for one_file in all_files:
+                    sht.move(one_file, destdir, self.group, 0664)
 
-            conf_base_dir = self.get_config_value('configurations')
-            aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repository)
-            apt_ftparchive.clean(destdir)
-            self.logger.info('Running apt-ftparchive generate')
-            apt_ftparchive.generate(destdir, aptconf, self.group)
-            self.logger.info('Running apt-ftparchive release')
-            apt_ftparchive.release(destdir, aptconf, self.group)
-            self._sign_repo(destdir)
+                conf_base_dir = self.get_config_value('configurations')
+                aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repository)
+                apt_ftparchive.clean(destdir)
+                # FIXME ajouter la section 'distrib'
+                self.logger.info('Running apt-ftparchive generate')
+                apt_ftparchive.generate(destdir, aptconf, self.group)
+                self.logger.info('Running apt-ftparchive release')
+                apt_ftparchive.release(destdir, aptconf, self.group)
+                self._sign_repo(destdir)
+
         finally:
             os.chdir(cwd)
 
@@ -308,7 +311,7 @@ class Configure(LdiCommand):
                                        'archivedir')]
         try:
             for dirname in directories:
-                sht.mkdir(dirname, -1, self.group, 0775)
+                sht.mkdir(dirname, self.group, 0775)
         except OSError:
             raise CommandError('Unable to create the directories %s with the '
                                'correct permissions.\n'

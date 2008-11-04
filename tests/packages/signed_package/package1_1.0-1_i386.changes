@@ -7,7 +7,7 @@ Source: package1
 Binary: package1
 Architecture: source all
 Version: 1.0-1
-Distribution: unstable
+Distribution: sid
 Urgency: low
 Maintainer: Alexandre Fayolle <alexandre.fayolle@logilab.fr>
 Changed-By: Alexandre Fayolle <alexandre.fayolle@logilab.fr>
@@ -25,13 +25,9 @@ Files:
  a6e78da5c1ddc9eac4b7ff6340466f8c 1854 misc extra package1_1.0-1_all.deb
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.6 (GNU/Linux)
+Version: GnuPG v1.4.9 (GNU/Linux)
 
-iQEVAwUBR0naKl6T+PKoJ87eAQIqLgf/ZO9JSEzMHxElqg8t5unY+BO6PVpnPYp4
-cVht0GKEggEGX4yeKOWjx7xk+U+JjZoLUE2PRqT7iydc0hIuye0kf79HU1JkC+/C
-/ucv0NedGOpPJBLNomb68p50yJqLuuqpEFAnecMYiq5T/h+P3P+8PHlc/6ac7obZ
-t+MEtVi14jxrtlzeaXZWViLHtfZCg9W+CC3V27xEBx0klw/D9IbJ5YQMRYwcVLmp
-4VaHSsEqSDioevjuCDLnOgkrKaAPcPc+zD+mh/4dOSgqJuzxvAjMOOg9ac2SJhGp
-ra4tY3gY+oYTpzLP5YWU8cksqseBxlG7drFHGh2zLuElpaldePfv3Q==
-=H+op
+iEYEARECAAYFAkkPXsYACgkQCZrUxmqgUyfD/ACfeT0u4P59pvvxzEXSbrT4Fiin
+NFAAnRtYWZ0FemlqIfr9VacgW0gFnjlg
+=9Ihl
 -----END PGP SIGNATURE-----

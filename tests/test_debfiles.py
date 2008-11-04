@@ -38,14 +38,13 @@ class Changes_TC(TestCase):
                         'package1_1.0-1_all.deb']
         signed_files = [osp.join(dirname, f) for f in signed_files]
         result = self.signed.get_all_files()
-        self.assertSetEqual(signed_files, result)
-        
+        self.assertUnorderedIterableEquals(signed_files, result)
 
     def test_check_sig(self):
         wrong_sigs = []
         self.failUnless(self.signed.check_sig(wrong_sigs))
         self.assertListEquals(wrong_sigs, [])
-        
+
         self.failUnless(self.no_source.check_sig(wrong_sigs))
         self.assertListEquals(wrong_sigs, [])
 
