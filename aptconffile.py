@@ -46,6 +46,9 @@ Dir {
         ArchiveDir "dists";
 };
 
+
+///////////////////////////////////////////////////////////
+// Repeat this section if you have multi-distributions
 TreeDefault {
     Directory "%(distribution)s/";
     SrcDirectory "%(distribution)s/";
@@ -57,5 +60,5 @@ BinDirectory "%(distribution)s" {
     Sources "%(distribution)s/Sources";
     Contents "%(distribution)s/Contents"
 };
+///////////////////////////////////////////////////////////
 '''
-

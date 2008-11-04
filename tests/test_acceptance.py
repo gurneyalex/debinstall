@@ -38,6 +38,7 @@ CONFIG = '''\
 [debinstall]
 group=devel
 umask=0002
+origin=Logilab S.A.
 
 [create]
 destination=%(destination)s
@@ -76,7 +77,7 @@ def write_config(filename, **substitutions):
     f.write(CONFIG % defaults)
     f.close()
     return filename
-    
+
 def cleanup_config(filename):
     filename = osp.join(TESTDIR, 'data', filename)
     if osp.isfile(filename):
@@ -85,7 +86,7 @@ def cleanup_config(filename):
 class LdiPublish_TC(TestCase, CommandLineTester):
     def setUp(self):
         self.tearDown()
-        
+
         self.config = write_config('debinstallrc_acceptance')
         command = ['ldi', 'configure', '-c', self.config]
         status, output, error = self.run_command(command)
@@ -93,22 +94,27 @@ class LdiPublish_TC(TestCase, CommandLineTester):
         self.run_command(command)
         changesfile = osp.join(TESTDIR, 'packages', 'signed_package', 'package1_1.0-1_i386.changes')
         command = ['ldi', 'upload', '-c', self.config, 'my_repo', changesfile]
-        self.run_command(command)
-        
+        status, output, error = self.run_command(command)
+
     def tearDown(self):
         dirname = osp.join(TESTDIR, 'data', 'acceptance')
         if osp.exists(dirname):
             shutil.rmtree(dirname)
         cleanup_config('debinstallrc_acceptance')
 
+    def test_aptconfigfile(self):
+        aptconfigfile = osp.join(TESTDIR, 'data', 'acceptance', 'configurations',
+                           'my_repo-apt.conf')
+        command = ['apt-config', 'dump', '-c', aptconfigfile]
+        status, output, error = self.run_command(command)
+        self.assertEqual(status, 0, error)
 
     def test_publish_normal(self):
+        base_dir = osp.join(TESTDIR, 'data', 'acceptance')
+        repodir = osp.join(base_dir, 'repositories', 'my_repo')
         command = ['ldi', 'publish', '-c', self.config, 'my_repo']
         status, output, error = self.run_command(command)
         self.assertEqual(status, 0, error)
-        base_dir = osp.join(TESTDIR, 'data', 'acceptance')
-        repodir = osp.join(base_dir, 'repositories', 'my_repo')
-        sid = osp.join(repodir, 'debian', 'sid')
         expected_generated = set(['Release', 'Packages', 'Packages.gz', 'Packages.bz2',
                               'Sources', 'Sources.gz', 'Sources.bz2',
                               'Contents', 'Contents.gz', 'Contents.bz2', ])
@@ -118,22 +124,22 @@ class LdiPublish_TC(TestCase, CommandLineTester):
                                   'package1_1.0-1_i386.changes',
                                   'package1_1.0.orig.tar.gz',
                                   ])
+        sid = osp.join(repodir, 'dists', 'sid')
         generated = set(os.listdir(sid))
-        
+
         self.failUnless(expected_generated.issubset(generated))
-        print generated
         self.assertSetEqual(generated, expected_published | expected_generated)
 
 class LdiUpload_TC(TestCase, CommandLineTester):
     def setUp(self):
         self.tearDown()
-        
+
         self.config = write_config('debinstallrc_acceptance')
         command = ['ldi', 'configure', '-c', self.config]
         status, output, error = self.run_command(command)
         command = ['ldi', 'create', '-c', self.config, 'my_repo']
         self.run_command(command)
-        
+
     def tearDown(self):
         dirname = osp.join(TESTDIR, 'data', 'acceptance')
         if osp.exists(dirname):
@@ -148,7 +154,7 @@ class LdiUpload_TC(TestCase, CommandLineTester):
         self.assertEqual(status, 0, error)
         base_dir = osp.join(TESTDIR, 'data', 'acceptance')
         repodir = osp.join(base_dir, 'repositories', 'my_repo')
-        incoming = osp.join(repodir, 'incoming')
+        incoming = osp.join(repodir, 'incoming', 'sid')
         uploaded = os.listdir(incoming)
         expected = ['package1_1.0-1_all.deb',
                     'package1_1.0-1.diff.gz',
@@ -156,7 +162,7 @@ class LdiUpload_TC(TestCase, CommandLineTester):
                     'package1_1.0-1_i386.changes',
                     'package1_1.0.orig.tar.gz',
                     ]
-        self.assertSetEqual(uploaded, expected)
+        self.assertUnorderedIterableEquals(uploaded, expected)
 
     def test_upload_unsigned_changes(self):
         changesfile = osp.join(TESTDIR, 'packages', 'unsigned_package', 'package1_1.0-1_i386.changes')
@@ -173,7 +179,7 @@ class LdiUpload_TC(TestCase, CommandLineTester):
         self.assertEqual(status, 0, error)
         base_dir = osp.join(TESTDIR, 'data', 'acceptance')
         repodir = osp.join(base_dir, 'repositories', 'my_repo')
-        incoming = osp.join(repodir, 'incoming')
+        incoming = osp.join(repodir, 'incoming', 'sid')
         uploaded = os.listdir(incoming)
         expected = ['package1_1.0-1_all.deb',
                     'package1_1.0-1.diff.gz',
@@ -181,7 +187,7 @@ class LdiUpload_TC(TestCase, CommandLineTester):
                     'package1_1.0-1_i386.changes',
                     'package1_1.0.orig.tar.gz',
                     ]
-        self.assertSetEqual(uploaded, expected)
+        self.assertUnorderedIterableEquals(uploaded, expected)
 
     def test_upload_wrong_md5(self):
         self.skip('unwritten test')
@@ -193,13 +199,13 @@ class LdiCreate_TC(TestCase, CommandLineTester):
         self.config = write_config('debinstallrc_acceptance')
         command = ['ldi', 'configure', '-c', self.config]
         status, output, error = self.run_command(command)
-        
+
     def tearDown(self):
         dirname = osp.join(TESTDIR, 'data', 'acceptance')
         if osp.exists(dirname):
             shutil.rmtree(dirname)
         cleanup_config('debinstallrc_acceptance')
-            
+
     def test_normal_creation(self):
         command = ['ldi', 'create', '-c', self.config, 'my_repo']
         status, output, error = self.run_command(command)
@@ -207,12 +213,12 @@ class LdiCreate_TC(TestCase, CommandLineTester):
         base_dir = osp.join(TESTDIR, 'data', 'acceptance')
 
         repodir = osp.join(base_dir, 'repositories', 'my_repo')
-        debian = osp.join(repodir, 'debian')
-        sid = osp.join(debian, 'sid')
+        dists = osp.join(repodir, 'dists')
+        sid = osp.join(dists, 'sid')
         incoming = osp.join(repodir, 'incoming')
         self.failUnless(osp.isdir(repodir), 'repo dir not created')
-        self.failUnless(osp.isdir(debian), 'debian dir not created')
-        self.failUnless(osp.isdir(sid), 'debian/sid dir not created')
+        self.failUnless(osp.isdir(dists), 'dists dir not created')
+        self.failUnless(osp.isdir(sid), 'dists/sid dir not created')
         self.failUnless(osp.isdir(incoming), 'incoming dir not created')
         aptconf = osp.join(base_dir, 'configurations', 'my_repo-apt.conf')
         self.failUnless(osp.isfile(aptconf), 'apt.conf file not created')
@@ -231,14 +237,11 @@ packages=
 '''
         self.assertEquals(config, expected, 'incorrect ldi.conf written:\n'+config)
 
-        
+
     def test_no_double_creation(self):
         command = ['ldi', 'create', '-c', self.config, 'my_repo']
         status, output, error = self.run_command(command)
         self.assertEquals(status, 0, error)
-        status, output, error = self.run_command(command)
-        self.failIfEqual(status, 0)
-
 
     def test_subrepo_creation(self):
         command = ['ldi', 'create', '-c', self.config, '-s', 'repo1', '-s', 'repo2', '-p', 'package1', '-p', 'package2', 'my_repo']
@@ -300,7 +303,7 @@ class TestFramework_TC(TestCase, CommandLineTester):
         files = os.listdir(TESTDIR)
         output = output.splitlines(False)
         self.assertSetEqual(set(output), set(files))
-       
-       
+
+
 if __name__ == '__main__':
     unittest_main()
