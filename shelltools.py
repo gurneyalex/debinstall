@@ -23,7 +23,7 @@ import shutil
 
 def set_permissions(path, uid, gid, mod):
     """set owner and permissions on path
-    
+
     uid and gid and numeric user and group ids (gid can also be a group name)
     mod is the permission as an integer"""
     gid = getgid(gid)
@@ -32,15 +32,6 @@ def set_permissions(path, uid, gid, mod):
         os.chmod(path, mod)
     except OSError, exc:
         raise RuntimeError('Failed to set permissions on %s: %s' % (path, exc))
-
-def ensure_directories(directories):
-    """create each directory in the directories (a string or a list of
-    strings), with the missing directories in between"""
-    if type(directories) is str:
-        directories = [directories]
-    for dirname in directories:
-        if not osp.isdir(dirname):
-            os.makedirs(dirname)
 
 def getgid(group):
     """return the group id for group.
@@ -71,6 +62,6 @@ def move(source, dest, group, perms):
 def mkdir(path, group, perms):
     """create a directory with the specified permissions"""
     gid = getgid(group)
-    os.mkdir(path)
+    os.makedirs(path)
     set_permissions(path, -1, gid, perms)
 

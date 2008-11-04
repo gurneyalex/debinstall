@@ -97,12 +97,14 @@ class Create(LdiCommand):
         ldiconf = osp.join(conf_base_dir, '%s-ldi.conf' % repo_name)
 
         for directory in [dest_dir,
-                          osp.join(dest_dir, 'incoming'),
-                          osp.join(dest_dir, 'debian'),
-                          osp.join(dest_dir, 'debian', distname),
+                          osp.join(dest_dir, 'incoming', distname),
+                          osp.join(dest_dir, 'dists', distname),
                           ]:
             self.logger.info('creation of %s', directory)
-            sht.mkdir(directory, self.group, 02775) # set gid on directories 
+            try:
+                sht.mkdir(directory, self.group, 02775) # set gid on directories 
+            except OSError, exc:
+                self.logger.debug(exc)
 
         if osp.isfile(aptconf) or osp.isfile(ldiconf):
             self.logger.error("The repository '%s' already exists" % repo_name)
@@ -298,9 +300,8 @@ class Configure(LdiCommand):
                                        'configurations',
                                        'archivedir')]
         try:
-            sht.ensure_directories(directories)
             for dirname in directories:
-                sht.set_permissions(dirname, -1, self.group, 0775)
+                sht.mkdir(dirname, -1, self.group, 0775)
         except OSError:
             raise CommandError('Unable to create the directories %s with the '
                                'correct permissions.\n'
