@@ -311,18 +311,19 @@ class Configure(LdiCommand):
 
 
 class List(LdiCommand):
-    """list all repositories or all packages in a repository"""
+    """list all repositories and their distributions"""
     name = "list"
     min_args = 0
     max_args = sys.maxint
     arguments = "[repository...]"
 
     def process(self):
-        if self.args: # repositories were specified
-            self.logger.error('not implemented yet')
+        if self.args:
+            repositories = self.args[:]
         else:
             repositories = self.get_repo_list()
-            print '\n'.join(repositories)
+        for repository in repositories:
+            print repository, ':', os.listdir(osp.join(repository, "incoming"))
 
     def get_repo_list(self):
         dest_dir, conf_dir = [self.get_config_value(confkey)
