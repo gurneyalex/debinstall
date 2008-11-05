@@ -108,7 +108,7 @@ class LdiCommand(Command):
             configfile = self._get_ldi_conf_path(reponame)
             self._repo_parser.read([configfile])
 
-        sections = ['publication', 'subrepository']
+        sections = ['subrepository']
         for section in sections:
             if self._repo_parser.has_section(section):
                 if self._repo_parser.has_option(section, option):

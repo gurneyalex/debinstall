@@ -26,9 +26,6 @@ def writeconf(dest, group, perms, distributions, sources, packages):
     fdesc.close()
 
 DEFAULT_LDICONF = '''\
-[publication]
-distribution=%(distribution)s
-
 [subrepository]
 sources=%(sources)s
 packages=%(packages)s

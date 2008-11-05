@@ -243,14 +243,12 @@ class LdiCreate_TC(TestCase, CommandLineTester):
         config = f.read()
         f.close()
         expected = '''\
-[publication]
-distribution=%s
-
 [subrepository]
 sources=
 packages=
-''' % (','.join(distnames))
+'''
         self.assertEquals(config, expected, 'incorrect ldi.conf written:\n'+config)
+
         # FIXME : test apt-ftparchive conf file
 
     def test_no_double_creation(self):
@@ -268,9 +266,6 @@ packages=
         config = f.read()
         f.close()
         expected = '''\
-[publication]
-distribution=sid
-
 [subrepository]
 sources=repo1, repo2
 packages=package1, package2
