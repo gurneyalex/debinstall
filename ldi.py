@@ -29,6 +29,8 @@ from debinstall.command import LdiCommand, CommandError
 from debinstall import shelltools as sht
 from debinstall import apt_ftparchive
 from debinstall.__pkginfo__ import version
+from debinstall import aptconffile
+
 
 def run(args=None):
     if sys.argv[0] == "-c": # launched by binary script using python -c
@@ -101,22 +103,11 @@ class Create(LdiCommand):
         aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repo_name)
         ldiconf = osp.join(conf_base_dir, '%s-ldi.conf' % repo_name)
 
-        directories = [dest_dir]
-        for distname in distnames:
-            directories.append(osp.join(dest_dir, 'incoming', distname))
-            directories.append(osp.join(dest_dir, 'dists', distname))
-
-        for directory in directories:
-            self.logger.info('creation of %s', directory)
-            try:
-                sht.mkdir(directory, self.group, 02775) # set gid on directories 
-            except OSError, exc:
-                self.logger.debug(exc)
-
         if osp.isfile(aptconf) or osp.isfile(ldiconf):
-            self.logger.error("The repository '%s' already exists" % repo_name)
-            self.logger.info("You can edit the aptfile %s to add new sections"
-                             % aptconf)
+            self.logger.info("The repository '%s' already exists" % repo_name)
+            aptconffile.writeconf(aptconf, self.group, 0664, distnames, origin)
+            self.logger.info("New distribution %s was added in the aptconf file %s"
+                             % (','.join(distnames), aptconf))
         else:
             if self.options.source_repositories:
                 if not self.options.packages:
@@ -139,12 +130,21 @@ class Create(LdiCommand):
                                  self.options.aptconffile, aptconf)
                 sht.copy(self.options.aptconffile, aptconf, self.group, 0755)
             else:
-                from debinstall import aptconffile
                 self.logger.info('writing default aptconf to %s', aptconf)
-                aptconffile.writeconf(aptconf, self.group, 0664, distnames[0], origin)
-                for distname in distnames:
-                    aptconffile.writeconf(aptconf, self.group, 0664, distname, origin, 1)
+                aptconffile.writeconf(aptconf, self.group, 0664, distnames, origin)
                 self.logger.info('An aptconf file %s has been created.' % aptconf)
+
+        directories = [dest_dir]
+        for distname in distnames:
+            directories.append(osp.join(dest_dir, 'incoming', distname))
+            directories.append(osp.join(dest_dir, 'dists', distname))
+
+        for directory in directories:
+            self.logger.info('creation of %s', directory)
+            try:
+                sht.mkdir(directory, self.group, 02775) # set gid on directories 
+            except OSError, exc:
+                self.logger.debug(exc)
 
 class Upload(LdiCommand):
     """upload a new package to the incoming queue of a repository"""

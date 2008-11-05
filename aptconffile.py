@@ -16,11 +16,25 @@
 
 """apt.conf file manipulation"""
 
+import os
+import re
+
 def writeconf(dest, group, perms, distributions, origin):
     """write a configuration file for use by apt-ftparchive"""
-    fdesc = open(dest, "w")
-    fdesc.write(APTDEFAULT_APTCONF % {'distribution': distribution,
-                                      'origin': origin})
+    fdesc = open(dest, "a")
+    if fdesc.tell() == 0:
+        fdesc.write(APTDEFAULT_APTCONF % {'distributions': ','.join(distributions),
+                                          'origin': origin})
+    else:
+        fdesc.close()
+        oldconf = open(dest).read()
+        old_dists = re.search(r'Suite\s+"(.*?)";', oldconf).group(1).split(',')
+        distributions = list(set(distributions) | set(old_dists))
+        os.unlink(dest)
+        return writeconf(dest, group, perms, distributions, origin)
+
+    for distribution in distributions:
+        fdesc.write(BINDIRECTORY_APTCONF % {'distribution': distribution})
     fdesc.close()
 
 APTDEFAULT_APTCONF = '''\
@@ -28,8 +42,8 @@ APT {
   FTPArchive {
     Release {
         Origin "%(origin)s";
-        Label  "Debian packages Repository";
-        Suite  "%(distribution)s";
+        Label  "%(origin)s debian packages repository";
+        Suite  "%(distributions)s";
         Description "created by ldi utility";
     };
   };
@@ -46,19 +60,15 @@ Dir {
         ArchiveDir "dists";
 };
 
+/////////////////////////////////////////////////////
+// These sections added for new distribution creation
+'''
 
-///////////////////////////////////////////////////////////
-// Repeat this section if you have multi-distributions
-TreeDefault {
-    Directory "%(distribution)s/";
-    SrcDirectory "%(distribution)s/";
-
-};
+BINDIRECTORY_APTCONF = '''\
 
 BinDirectory "%(distribution)s" {
     Packages "%(distribution)s/Packages";
     Sources "%(distribution)s/Sources";
     Contents "%(distribution)s/Contents"
 };
-///////////////////////////////////////////////////////////
 '''
