@@ -18,6 +18,7 @@
 manipulate debian packages and repositories"""
 import sys
 import os
+import re
 import os.path as osp
 import glob
 
@@ -92,6 +93,8 @@ class Create(LdiCommand):
         conf_base_dir = self.get_config_value('configurations')
         distnames = self.options.distribution or \
                    [self.get_config_value('default_distribution')]
+        if len(distnames) == 1:
+            distnames = re.split(r'[^\w]+', distames[0])
         repo_name = self.args[0]
         dest_dir = osp.join(dest_base_dir, repo_name)
         aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repo_name)
