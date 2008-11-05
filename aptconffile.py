@@ -16,7 +16,7 @@
 
 """apt.conf file manipulation"""
 
-def writeconf(dest, group, perms, distribution, origin):
+def writeconf(dest, group, perms, distributions, origin):
     """write a configuration file for use by apt-ftparchive"""
     fdesc = open(dest, "w")
     fdesc.write(APTDEFAULT_APTCONF % {'distribution': distribution,

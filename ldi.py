@@ -81,6 +81,7 @@ class Create(LdiCommand):
         ('-d', '--distribution',
          {'dest': 'distribution',
           'help': 'the name of the distribution in the repository',
+          'action': 'append',
           }
          ),
         ]
@@ -89,17 +90,19 @@ class Create(LdiCommand):
         origin = self.get_config_value("origin")
         dest_base_dir = self.get_config_value("destination")
         conf_base_dir = self.get_config_value('configurations')
-        distname = self.options.distribution or \
-                   self.get_config_value('default_distribution')
+        distnames = self.options.distribution or \
+                   [self.get_config_value('default_distribution')]
         repo_name = self.args[0]
         dest_dir = osp.join(dest_base_dir, repo_name)
         aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repo_name)
         ldiconf = osp.join(conf_base_dir, '%s-ldi.conf' % repo_name)
 
-        for directory in [dest_dir,
-                          osp.join(dest_dir, 'incoming', distname),
-                          osp.join(dest_dir, 'dists', distname),
-                          ]:
+        directories = [dest_dir]
+        for distname in distnames:
+            directories.append(osp.join(dest_dir, 'incoming', distname))
+            directories.append(osp.join(dest_dir, 'dists', distname))
+
+        for directory in directories:
             self.logger.info('creation of %s', directory)
             try:
                 sht.mkdir(directory, self.group, 02775) # set gid on directories 
@@ -123,7 +126,7 @@ class Create(LdiCommand):
             from debinstall import ldiconffile
             self.logger.info('writing ldiconf to %s', ldiconf)
             ldiconffile.writeconf(ldiconf, self.group, 0664,
-                                  distname,
+                                  distnames,
                                   self.options.source_repositories,
                                   self.options.packages)
 
@@ -134,7 +137,9 @@ class Create(LdiCommand):
             else:
                 from debinstall import aptconffile
                 self.logger.info('writing default aptconf to %s', aptconf)
-                aptconffile.writeconf(aptconf, self.group, 0664, distname, origin)
+                aptconffile.writeconf(aptconf, self.group, 0664, distnames[0], origin)
+                for distname in distnames:
+                    aptconffile.writeconf(aptconf, self.group, 0664, distname, origin, 1)
                 self.logger.info('An aptconf file %s has been created.' % aptconf)
 
 class Upload(LdiCommand):
