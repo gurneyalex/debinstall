@@ -1,6 +1,11 @@
 ChangeLog for debinstall
 ========================
 
+2008-11-04  --  2.1.0
+    * Add support for multiple distributions in same repository
+    * New option --remove for upload command
+    * Remove linda dependency
+
 2008-01-08  --  2.0.0
     * complete rewrite
     * debinstall command is deprecated. Use ldi instead
