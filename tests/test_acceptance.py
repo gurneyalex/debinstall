@@ -208,18 +208,33 @@ class LdiCreate_TC(TestCase, CommandLineTester):
 
     def test_normal_creation(self):
         command = ['ldi', 'create', '-c', self.config, 'my_repo']
+        self.check_dists(command, ['sid'])
+    
+    def test_multiple_dash_d_options(self):
+        command = ['ldi', 'create', '-c', self.config, '-d', 'unstable', '-d', 'testing', '-d', 'stable', 'my_repo']
+        self.check_dists(command, ['unstable', 'testing', 'stable'])
+
+    def test_comma_separated_dash_d(self):
+        command = ['ldi', 'create', '-c', self.config, '-d', 'unstable', '-d', 'testing,stable', 'my_repo']
+        self.check_dists(command, ['unstable', 'testing', 'stable'])
+
+    def check_dists(self, command, distnames):
         status, output, error = self.run_command(command)
         self.assertEquals(status, 0, error)
         base_dir = osp.join(TESTDIR, 'data', 'acceptance')
 
         repodir = osp.join(base_dir, 'repositories', 'my_repo')
-        dists = osp.join(repodir, 'dists')
-        sid = osp.join(dists, 'sid')
-        incoming = osp.join(repodir, 'incoming')
         self.failUnless(osp.isdir(repodir), 'repo dir not created')
+
+        dists = osp.join(repodir, 'dists')
         self.failUnless(osp.isdir(dists), 'dists dir not created')
-        self.failUnless(osp.isdir(sid), 'dists/sid dir not created')
+        incoming = osp.join(repodir, 'incoming')
         self.failUnless(osp.isdir(incoming), 'incoming dir not created')
+        for name in distnames:
+            for base in (dists, incoming):
+                directory = osp.join(base, name)
+                self.failUnless(osp.isdir(directory), '%s dir not created'%directory)
+
         aptconf = osp.join(base_dir, 'configurations', 'my_repo-apt.conf')
         self.failUnless(osp.isfile(aptconf), 'apt.conf file not created')
         ldiconf = osp.join(base_dir, 'configurations', 'my_repo-ldi.conf')
@@ -229,14 +244,14 @@ class LdiCreate_TC(TestCase, CommandLineTester):
         f.close()
         expected = '''\
 [publication]
-distribution=sid
+distribution=%s
 
 [subrepository]
 sources=
 packages=
-'''
+''' % (','.join(distnames))
         self.assertEquals(config, expected, 'incorrect ldi.conf written:\n'+config)
-
+        # FIXME : test apt-ftparchive conf file
 
     def test_no_double_creation(self):
         command = ['ldi', 'create', '-c', self.config, 'my_repo']

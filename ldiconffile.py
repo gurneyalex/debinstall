@@ -22,7 +22,7 @@ def writeconf(dest, group, perms, distributions, sources, packages):
     fdesc = open(dest, "w")
     fdesc.write(DEFAULT_LDICONF % {'sources': ', '.join(sources),
                                    'packages': ', '.join(packages),
-                                   'distribution': ','.join(distribution)})
+                                   'distribution': ','.join(distributions)})
     fdesc.close()
 
 DEFAULT_LDICONF = '''\

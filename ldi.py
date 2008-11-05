@@ -91,10 +91,11 @@ class Create(LdiCommand):
         origin = self.get_config_value("origin")
         dest_base_dir = self.get_config_value("destination")
         conf_base_dir = self.get_config_value('configurations')
-        distnames = self.options.distribution or \
+        raw_distnames = self.options.distribution or \
                    [self.get_config_value('default_distribution')]
-        if len(distnames) == 1:
-            distnames = re.split(r'[^\w]+', distames[0])
+        distnames = []
+        for name in raw_distnames:
+            distnames += re.split(r'[^\w]+', name)
         repo_name = self.args[0]
         dest_dir = osp.join(dest_base_dir, repo_name)
         aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repo_name)
