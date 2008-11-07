@@ -37,16 +37,23 @@ else
 	cd $DEST_DIR
 	echo "* entering in each directory now..."
 	for i in *; do
-		if [[ -d "$i/debian" ]]; then
+		if [[ -d "$i/debian" && ! -h "$i/debian" ]]; then
 			echo "** processing $i"
 			echo "*** rename debian/ to dists/"
 			mv $i/debian $i/dists
 			echo "*** add a symlink from 'debian/' to 'dists/'"
 			ln -s dists $i/debian
+			echo "*** retrieve current distrib"
+			DISTRIB=$(ls -1 $i/dists | head -n1)
+			if [[ ! -d "$i/dists/$DISTRIB" ]]; then
+				echo "ERROR: cannot retrieve current distribution ($DISTRIB)" >&2
+				exit 1
+			fi
 			echo "*** move incoming queue to incoming/sid"
-			mv -f $i/incoming $i/sid
+			mv -f $i/incoming $i/$DISTRIB
 			mkdir $i/incoming
-			mv $i/sid $i/incoming/
+			mv $i/$DISTRIB $i/incoming/
+			ls -l $i
 		else
 			echo "WARNING:'$i' is not a valid directory"
 		fi
