@@ -43,7 +43,7 @@ origin=Logilab S.A.
 [create]
 destination=%(destination)s
 configurations=%(configurations)s
-default_distribution=sid
+default_distribution=unstable
 
 [upload]
 check_signature=%(check_signature)s
@@ -123,8 +123,8 @@ class LdiPublish_TC(TestCase, CommandLineTester):
                                   'package1_1.0-1_i386.changes',
                                   'package1_1.0.orig.tar.gz',
                                   ])
-        sid = osp.join(repodir, 'dists', 'sid')
-        generated = set(os.listdir(sid))
+        unstable = osp.join(repodir, 'dists', 'unstable')
+        generated = set(os.listdir(unstable))
 
         self.failUnless(expected_generated.issubset(generated))
         self.assertSetEqual(generated, expected_published | expected_generated)
@@ -153,7 +153,7 @@ class LdiUpload_TC(TestCase, CommandLineTester):
         self.assertEqual(status, 0, error)
         base_dir = osp.join(TESTDIR, 'data', 'acceptance')
         repodir = osp.join(base_dir, 'repositories', 'my_repo')
-        incoming = osp.join(repodir, 'incoming', 'sid')
+        incoming = osp.join(repodir, 'incoming', 'unstable')
         uploaded = os.listdir(incoming)
         expected = ['package1_1.0-1_all.deb',
                     'package1_1.0-1.diff.gz',
@@ -178,7 +178,7 @@ class LdiUpload_TC(TestCase, CommandLineTester):
         self.assertEqual(status, 0, error)
         base_dir = osp.join(TESTDIR, 'data', 'acceptance')
         repodir = osp.join(base_dir, 'repositories', 'my_repo')
-        incoming = osp.join(repodir, 'incoming', 'sid')
+        incoming = osp.join(repodir, 'incoming', 'unstable')
         uploaded = os.listdir(incoming)
         expected = ['package1_1.0-1_all.deb',
                     'package1_1.0-1.diff.gz',
@@ -207,7 +207,7 @@ class LdiCreate_TC(TestCase, CommandLineTester):
 
     def test_normal_creation(self):
         command = ['ldi', 'create', '-c', self.config, 'my_repo']
-        self.check_dists(command, ['sid'])
+        self.check_dists(command, ['unstable'])
     
     def test_multiple_dash_d_options(self):
         command = ['ldi', 'create', '-c', self.config, '-d', 'unstable', '-d', 'testing', '-d', 'stable', 'my_repo']
