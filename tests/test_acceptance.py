@@ -47,13 +47,13 @@ default_distribution=sid
 
 [upload]
 check_signature=%(check_signature)s
-checkers=%(run_lintian)s %(run_linda)s
+checkers=%(run_lintian)s
 
 [publish]
 sign_repo=%(signrepo)s
 keyid=%(keyid)s
 check_signature=%(check_signature)s
-checkers=%(run_lintian)s %(run_linda)s
+checkers=%(run_lintian)s
 
 [archive]
 archivedir=%(archivedir)s
@@ -63,7 +63,6 @@ def write_config(filename, **substitutions):
     defaults={'destination': osp.join(TESTDIR, 'data', 'acceptance', 'repositories'),
               'configurations': osp.join(TESTDIR, 'data', 'acceptance', 'configurations'),
               'run_lintian': '',
-              'run_linda': '',
               'signrepo': 'no',
               'keyid': 'FFFFFFFF',
               'check_signature': 'yes',

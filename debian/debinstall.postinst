@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh -e
 
 adduser --system --no-create-home --group debinstall
 chown debinstall:debinstall /usr/bin/ldi
