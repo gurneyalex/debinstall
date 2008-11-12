@@ -90,7 +90,13 @@ class Create(LdiCommand):
         ]
 
     def process(self):
-        origin = self.get_config_value("origin")
+        try:
+            origin = self.get_config_value("origin")
+        except CommandError, exc:
+            self.logger.warning("%s", exc)
+            self.logger.warning("A default value has been written in your debinstallrc")
+            origin = "(Unknown)"
+
         dest_base_dir = self.get_config_value("destination")
         conf_base_dir = self.get_config_value('configurations')
         raw_distnames = self.options.distribution or \
