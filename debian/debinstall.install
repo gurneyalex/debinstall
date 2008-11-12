@@ -1,2 +1,3 @@
 debinstallrc etc/debinstall
 src/ldi usr/bin
+bin/ldi-migration2.1.sh usr/share/debinstall
