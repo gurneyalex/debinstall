@@ -4,7 +4,7 @@ Source: package1
 Binary: package1
 Architecture: source all
 Version: 1.0-1
-Distribution: sid
+Distribution: unstable
 Urgency: low
 Maintainer: Alexandre Fayolle <alexandre.fayolle@logilab.fr>
 Changed-By: Alexandre Fayolle <alexandre.fayolle@logilab.fr>

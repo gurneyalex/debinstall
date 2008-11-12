@@ -49,7 +49,7 @@ else
 				echo "ERROR: cannot retrieve current distribution ($DISTRIB)" >&2
 				exit 1
 			fi
-			echo "*** move incoming queue to incoming/sid"
+			echo "*** move incoming queue to incoming/$DISTRIB"
 			mv -f $i/incoming $i/$DISTRIB
 			mkdir $i/incoming
 			mv $i/$DISTRIB $i/incoming/

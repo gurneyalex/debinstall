@@ -7,7 +7,7 @@ Source: package1
 Binary: package1
 Architecture: all
 Version: 1.0-1
-Distribution: sid
+Distribution: unstable
 Urgency: low
 Maintainer: Alexandre Fayolle <alexandre.fayolle@logilab.fr>
 Changed-By: Alexandre Fayolle <alexandre.fayolle@logilab.fr>
@@ -24,7 +24,7 @@ Files:
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.9 (GNU/Linux)
 
-iEYEARECAAYFAkkQqeEACgkQCZrUxmqgUyeGfwCgi7iUea1CcGZyEATsx9ViVNka
-SakAoJsEWf5kyol4Qdbp9MeeaxsHHd2O
-=TtwI
+iEYEARECAAYFAkkbK1gACgkQCZrUxmqgUycBSACcCTgAAa8OujMRP5JTIn7VdHX2
+8rQAnAyhACQxUUB1ZE/KfNiizQJE4wxt
+=Mcf2
 -----END PGP SIGNATURE-----

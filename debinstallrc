@@ -5,7 +5,7 @@ origin=Logilab S.A.
 [create]
 destination=/var/www/debian
 configurations=/var/lib/debinstall
-default_distribution=sid
+default_distribution=unstable
 
 [upload]
 check_signature=yes
