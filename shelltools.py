@@ -29,9 +29,12 @@ def set_permissions(path, uid, gid, mod):
     gid = getgid(gid)
     try:
         os.chown(path, uid, gid)
+    except OSError, exc:
+        raise RuntimeError('Failed to set ownership %s,%s on %s: %s' % (uid, gid, path, exc))
+    try:
         os.chmod(path, mod)
     except OSError, exc:
-        raise RuntimeError('Failed to set permissions on %s: %s' % (path, exc))
+        raise RuntimeError('Failed to set permissions %s on %s: %s' % (mod, path, exc))
 
 def getgid(group):
     """return the group id for group.
