@@ -209,7 +209,7 @@ class Upload(LdiCommand):
                                repository, 'incoming', distrib)
             self.logger.info('uploading packages to %s for distribution %s',
                              destdir, distrib)
-            if not osp.isdir(destdir):
+            if not (osp.isdir(destdir) or osp.islink(destdir)):
                 raise CommandError("The repository '%s' is not fully created. \n"
                                    "Use `ldi list` to get the list of "
                                    "available repositories." % destdir)
@@ -238,7 +238,7 @@ class Publish(Upload):
                 distrib = Changes(filename).changes['Distribution']
                 incoming = osp.join(self.get_config_value('destination'),
                                     self.args[0], 'incoming', distrib)
-                if not osp.isdir(incoming):
+                if not (osp.isdir(incoming) or osp.islink(incoming)):
                     raise CommandError("The repository '%s' is not fully created. \n"
                                        "Use `ldi list` to get the list of "
                                        "available repositories." % incoming)
