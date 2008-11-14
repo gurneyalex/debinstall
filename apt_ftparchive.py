@@ -44,9 +44,10 @@ def generate(debian_dir, aptconf, group):
     if status != 0:
         raise CommandError('apt-ftparchive exited with error status %d'%status)
 
-def release(debian_dir, aptconf, group):
+def release(debian_dir, aptconf, group, distrib):
     release = open(osp.join(debian_dir, 'Release'), 'w')
-    command = ['apt-ftparchive', '-c', aptconf, 'release', debian_dir]
+    command = ['apt-ftparchive', '-c', aptconf, 'release', debian_dir, '-o',
+               'APT::FTPArchive::Release::Suite="%s"' % distrib]
     logger.info('running %s$ %s', os.getcwd(), ' '.join(command))
     pipe = subprocess.Popen(command,
                             stdout=release)

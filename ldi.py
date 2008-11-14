@@ -296,7 +296,7 @@ class Publish(Upload):
                 self.logger.info('Running apt-ftparchive generate')
                 apt_ftparchive.generate(destdir, aptconf, self.group)
                 self.logger.info('Running apt-ftparchive release')
-                apt_ftparchive.release(destdir, aptconf, self.group)
+                apt_ftparchive.release(destdir, aptconf, self.group, distrib)
                 self._sign_repo(destdir)
 
         finally:
