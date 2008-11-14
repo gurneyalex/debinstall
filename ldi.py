@@ -348,7 +348,7 @@ class List(LdiCommand):
         else:
             repositories = self.get_repo_list()
         for repository in repositories:
-            print repository, ':', os.listdir(osp.join(repository, "incoming"))
+            print repository, ':', os.listdir(osp.join(self.get_config_value("destination"), repository, "incoming"))
 
     def get_repo_list(self):
         dest_dir, conf_dir = [self.get_config_value(confkey)
