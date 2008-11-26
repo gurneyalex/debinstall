@@ -157,7 +157,7 @@ class Upload(LdiCommand):
     name = "upload"
     min_args = 2
     max_args = sys.maxint
-    arguments = "repository package.changes [...]"
+    arguments = "repository [-r | --remove] package.changes [...]"
     opt_specs = [ ('-r', '--remove',
                    {'dest': 'remove',
                     'action': "store_true",
@@ -227,8 +227,14 @@ class Publish(Upload):
     name = "publish"
     min_args = 1
     max_args = sys.maxint
-    arguments = "repository [package.changes...]"
-    opt_specs = []
+    arguments = "repository [-r | --refresh] [package.changes...]"
+    opt_specs = [ ('-r', '--refresh',
+                   {'dest': 'refresh',
+                    'action': "store_true",
+                    'default': False,
+                    'help': 'refresh the repository index files'
+                   }),
+                ]
 
     def _get_incoming_changes(self):
         repository = self.args[0]
@@ -275,12 +281,15 @@ class Publish(Upload):
         cwd = os.getcwd()
         os.chdir(workdir)
 
+        conf_base_dir = self.get_config_value('configurations')
+        aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repository)
+        distsdir = osp.join(self.get_config_value('destination'),
+                            repository, 'dists')
         try:
             changes_files = self._get_incoming_changes()
             for filename in changes_files:
                 distrib = Changes(filename).changes['Distribution']
-                destdir = osp.join(self.get_config_value('destination'),
-                                   repository, 'dists', distrib)
+                destdir = osp.join(distsdir, distrib)
                 self.logger.info('publishing packages to %s', destdir)
                 self._check_signature(filename)
                 self._run_checkers(filename)
@@ -289,15 +298,13 @@ class Publish(Upload):
                 for one_file in all_files:
                     sht.move(one_file, destdir, self.group, 0664)
 
-                conf_base_dir = self.get_config_value('configurations')
-                aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repository)
-                apt_ftparchive.clean(destdir)
-                # FIXME ajouter la section 'distrib'
-                self.logger.info('Running apt-ftparchive generate')
-                apt_ftparchive.generate(destdir, aptconf, self.group)
-                self.logger.info('Running apt-ftparchive release')
-                apt_ftparchive.release(destdir, aptconf, self.group, distrib)
-                self._sign_repo(destdir)
+                self._apt_refresh(distsdir, aptconf, distrib)
+            else:
+                self.logger.info('Nothing to process.')
+
+            if self.options.refresh:
+                self.logger.info('Force refreshing %s...' % repository)
+                self._apt_refresh(distsdir, aptconf)
 
         finally:
             os.chdir(cwd)
@@ -310,6 +317,15 @@ class Publish(Upload):
                             self.get_config_value('keyid'),
                             self.group)
 
+    def _apt_refresh(self, distsdir, aptconf, distrib="*"):
+        for destdir in glob.glob(osp.join(distsdir, distrib)):
+            apt_ftparchive.clean(destdir)
+            self.logger.info('Running apt-ftparchive generate')
+            apt_ftparchive.generate(destdir, aptconf, self.group)
+            self.logger.info('Running apt-ftparchive release')
+            apt_ftparchive.release(destdir, aptconf, self.group,
+                                   os.path.basename(destdir))
+            self._sign_repo(destdir)
 
 class Configure(LdiCommand):
     """install the program by creating the correct directories with
