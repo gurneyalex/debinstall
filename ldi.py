@@ -193,8 +193,8 @@ class Upload(LdiCommand):
         failed = []
         try:
             Changes(changes_file).check_sig(failed)
-        except (Exception,), exc:
-            raise CommandError('%s is not a changes file [%s]' % (filename, exc))
+        except Exception, exc:
+            raise CommandError('%s is not a changes file [%s]' % (changes_file, exc))
 
         if failed:
             raise CommandError('The following files are not signed:\n' + \
@@ -237,7 +237,6 @@ class Publish(Upload):
                 ]
 
     def _get_incoming_changes(self):
-        repository = self.args[0]
         changes = []
         for changes_file in self.args[1:]:
             for filename in glob.glob(osp.join('incoming', '**', changes_file)):
