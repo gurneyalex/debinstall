@@ -1,7 +1,7 @@
 ChangeLog for debinstall
 ========================
 
-2008-11-28  --  2.1.2
+2008-11-28  --  2.1.3
     * Add refresh option to Publish command
     * Accept symlink as valid distribution in repository
     * Fix Suite value in Release file
