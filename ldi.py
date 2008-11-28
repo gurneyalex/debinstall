@@ -319,13 +319,14 @@ class Publish(Upload):
 
     def _apt_refresh(self, distsdir, aptconf, distrib="*"):
         for destdir in glob.glob(osp.join(distsdir, distrib)):
-            apt_ftparchive.clean(destdir)
-            self.logger.info('Running apt-ftparchive generate')
-            apt_ftparchive.generate(destdir, aptconf, self.group)
-            self.logger.info('Running apt-ftparchive release')
-            apt_ftparchive.release(destdir, aptconf, self.group,
-                                   os.path.basename(destdir))
-            self._sign_repo(destdir)
+            if osp.isdir(destdir):
+                apt_ftparchive.clean(destdir)
+                self.logger.info('Running apt-ftparchive generate')
+                apt_ftparchive.generate(destdir, aptconf, self.group)
+                self.logger.info('Running apt-ftparchive release')
+                apt_ftparchive.release(destdir, aptconf, self.group,
+                                       os.path.basename(destdir))
+                self._sign_repo(destdir)
 
 class Configure(LdiCommand):
     """install the program by creating the correct directories with
