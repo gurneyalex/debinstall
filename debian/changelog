@@ -1,3 +1,9 @@
+debinstall (2.1.2-1) DISTRIBUTION; urgency=low
+
+  * New upstream release
+
+ -- Julien Jehannet <julien.jehannet@logilab.fr>  Fri, 28 Nov 2008 17:11:47 +0100
+
 debinstall (2.1.1-1) DISTRIBUTION; urgency=low
 
   * New upstream release
