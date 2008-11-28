@@ -1,6 +1,11 @@
 ChangeLog for debinstall
 ========================
 
+2008-11-28  --  2.1.2
+    * Add refresh option to Publish command
+    * Accept symlink as valid distribution in repository
+    * Fix Suite value in Release file
+
 2008-11-04  --  2.1.0
     * Add support for multiple distributions in same repository
     * New option --remove for upload command
@@ -23,32 +28,23 @@ ChangeLog for debinstall
 
 2006-03-08  --  0.4.0
     * bug fixes
-
     * offers to sign repository (new apt check)
-	
+
 2006-02-21  --  0.3.0
     * uses Replace to find previous packages
-
     * offers to use linda/lintian
-
     * use optparse instead of getopt
-
     * more checks
-
     * functionnality to check repository
-
     * Packages generation corrected
 
 2006-02-08  --  0.2.0
     * added possibility of choosing the processing of one package in
 	particular (usefull for creating partial repositories for a
 	package and all its dependencies)
-	
+
 2006-02-07  --  0.1.0
     * First release.
-
     * minimal functionnality : move packages between incoming,
 	repository and old archive, do basic checks in the process, and
 	has a simple cleanup algorithm.
-
-
