@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-adduser --system --no-create-home --group debinstall
+adduser --system --group debinstall --shell /bin/rbash
 chown debinstall:debinstall /usr/bin/ldi
 chmod 6755 /usr/bin/ldi
 
