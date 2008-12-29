@@ -239,29 +239,24 @@ class Publish(Upload):
                    }),
                 ]
 
-    def _get_incoming_changes(self):
+    def _get_incoming_changes(self, workdir):
         changes = []
+        incoming = osp.join(workdir, 'incoming', '**')
         for changes_file in self.args[1:]:
-            for filename in glob.glob(osp.join('incoming', '**', changes_file)):
-                distrib = Changes(filename).changes['Distribution']
-                incoming = osp.join(self.get_config_value('destination'),
-                                    self.args[0], 'incoming', distrib)
-                if not (osp.isdir(incoming) or osp.islink(incoming)):
-                    raise CommandError("The repository '%s' is not fully created. \n"
-                                       "Use `ldi list` to get the list of "
-                                       "available repositories." % incoming)
-                if osp.isabs(filename):
-                    raise CommandError('%s is not a relative path' % filename)
-                elif not osp.isfile(filename):
-                    msg = "%s is not available in %s %s's incoming queue" % \
-                          (filename, distrib, self.args[0])
-                    raise CommandError(msg)
-                elif not filename.endswith('.changes'):
-                    raise CommandError('%s is not a changes file' % filename)
+            if osp.isabs(changes_file):
+                raise CommandError('%s is not a relative path' % changes_file)
+            if not changes_files.endswith('.changes'):
+                raise CommandError('%s is not a changes file' % changes_files)
+            for filename in glob.glob(osp.join(incoming, changes_file)):
+                if osp.isfile(filename):
+                    # you can add further tests here
+                    changes.append(filename)
                 else:
-                    changes.append(osp.join(incoming, distrib, filename))
+                    msg = "%s is not available in %s's incoming queue(s)" % \
+                          (filename, self.args[0])
+                    raise CommandError(msg)
         else:
-            changes = glob.glob(osp.join('incoming', '**', '*.changes'))
+            changes = glob.glob(osp.join(incoming, '*.changes'))
         return changes
 
     def _run_checkers(self, changes_file):
@@ -290,7 +285,7 @@ class Publish(Upload):
         distsdir = osp.join(self.get_config_value('destination'),
                             repository, 'dists')
         try:
-            changes_files = self._get_incoming_changes()
+            changes_files = self._get_incoming_changes(workdir)
             for filename in changes_files:
                 distrib = Changes(filename).changes['Distribution']
                 destdir = osp.join(distsdir, distrib)
