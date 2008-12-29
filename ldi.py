@@ -201,6 +201,12 @@ class Upload(LdiCommand):
                                '\n'.join(failed))
         return True
 
+    def _check_repository(self, destdir):
+        if not (osp.isdir(destdir) or osp.islink(destdir)):
+            raise CommandError("The repository '%s' is not fully created. \n"
+                               "Use `ldi list` to get the list of "
+                               "available repositories." % destdir)
+
     def process(self):
         repository = self.args[0]
         for filename in self.args[1:]:
@@ -209,10 +215,7 @@ class Upload(LdiCommand):
                                repository, 'incoming', distrib)
             self.logger.info('uploading packages to %s for distribution %s',
                              destdir, distrib)
-            if not (osp.isdir(destdir) or osp.islink(destdir)):
-                raise CommandError("The repository '%s' is not fully created. \n"
-                                   "Use `ldi list` to get the list of "
-                                   "available repositories." % destdir)
+            self._check_repository(destdir)
             self._check_signature(filename)
             all_files = self._get_all_package_files(filename)
             if self.options.remove:
@@ -275,8 +278,10 @@ class Publish(Upload):
 
     def process(self):
         repository = self.args[0]
-        workdir = osp.join(self.get_config_value('destination'),
-                           repository)
+        workdir = osp.join(self.get_config_value('destination'), repository)
+
+        # change to repository directory level to have relative pathnames from
+        # here (restore current directory in finally statement)
         cwd = os.getcwd()
         os.chdir(workdir)
 
@@ -290,6 +295,7 @@ class Publish(Upload):
                 distrib = Changes(filename).changes['Distribution']
                 destdir = osp.join(distsdir, distrib)
                 self.logger.info('publishing packages to %s', destdir)
+                self._check_repository(destdir)
                 self._check_signature(filename)
                 self._run_checkers(filename)
 
