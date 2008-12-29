@@ -164,6 +164,11 @@ class Upload(LdiCommand):
                     'default': False,
                     'help': 'remove debian changes file when uploading',
                    }),
+                 ('-d', '--distribution',
+                   {'dest': 'distribution',
+                   'help': 'force a specific target distribution',
+                   'action': 'string',
+                   }),
                 ]
 
     def _get_all_package_files(self, changes_file):
@@ -210,7 +215,10 @@ class Upload(LdiCommand):
     def process(self):
         repository = self.args[0]
         for filename in self.args[1:]:
-            distrib = Changes(filename).changes['Distribution']
+            if self.options.distribution:
+                distrib = self.options.distribution
+            else:
+                distrib = Changes(filename).changes['Distribution']
             destdir = osp.join(self.get_config_value('destination'),
                                repository, 'incoming', distrib)
             self.logger.info('uploading packages to %s for distribution %s',
@@ -287,7 +295,10 @@ class Publish(Upload):
         try:
             changes_files = self._get_incoming_changes(workdir)
             for filename in changes_files:
-                distrib = Changes(filename).changes['Distribution']
+                # distribution name is the same as the incoming directory name
+                # it lets permit to override a valid suite by a more private
+                # one (for example: contrib, volatile, experimental, ...)
+                distrib = osp.basename(osp.dirname(filename))
                 destdir = osp.join(distsdir, distrib)
                 self.logger.info('publishing packages to %s', destdir)
                 self._check_repository(destdir)
