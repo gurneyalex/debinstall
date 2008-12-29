@@ -158,7 +158,7 @@ class Upload(LdiCommand):
     min_args = 2
     max_args = sys.maxint
     arguments = "repository [-r | --remove] package.changes [...]"
-    opt_specs = [ ('-r', '--remove',
+    opt_specs = [('-r', '--remove',
                    {'dest': 'remove',
                     'action': "store_true",
                     'default': False,
@@ -228,11 +228,11 @@ class Publish(Upload):
     min_args = 1
     max_args = sys.maxint
     arguments = "repository [-r | --refresh] [package.changes...]"
-    opt_specs = [ ('-r', '--refresh',
+    opt_specs = [('-r', '--refresh',
                    {'dest': 'refresh',
                     'action': "store_true",
                     'default': False,
-                    'help': 'refresh the repository index files'
+                    'help': 'refresh the whole repository index files'
                    }),
                 ]
 
@@ -299,10 +299,10 @@ class Publish(Upload):
 
                 self._apt_refresh(distsdir, aptconf, distrib)
             else:
-                self.logger.info('Nothing to process.')
+                self.logger.info('No package to publish.')
 
             if self.options.refresh:
-                self.logger.info('Force refreshing %s...' % repository)
+                self.logger.info('Force refreshing whole repository %s...' % repository)
                 self._apt_refresh(distsdir, aptconf)
 
         finally:
@@ -324,7 +324,7 @@ class Publish(Upload):
                 apt_ftparchive.generate(destdir, aptconf, self.group)
                 self.logger.info('Running apt-ftparchive release')
                 apt_ftparchive.release(destdir, aptconf, self.group,
-                                       os.path.basename(destdir))
+                                       osp.basename(destdir))
                 self._sign_repo(destdir)
 
 class Configure(LdiCommand):
