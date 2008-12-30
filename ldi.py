@@ -166,8 +166,7 @@ class Upload(LdiCommand):
                    }),
                  ('-d', '--distribution',
                    {'dest': 'distribution',
-                   'help': 'force a specific target distribution',
-                   'action': 'string',
+                    'help': 'force a specific target distribution',
                    }),
                 ]
 
