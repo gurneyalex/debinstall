@@ -173,7 +173,7 @@ class Upload(LdiCommand):
 
     def _get_all_package_files(self, changes_file):
         file_list = []
-        self.logger.info('preparing upload of %s', changes_file)
+        self.logger.info('%sing of %s...' % (self.__class__.__name__, changes_file))
         all_files = Changes(changes_file).get_all_files()
         for candidate in all_files:
             try:
@@ -208,8 +208,8 @@ class Upload(LdiCommand):
 
     def _check_repository(self, destdir):
         if not (osp.isdir(destdir) or osp.islink(destdir)):
-            raise CommandError("The repository '%s' is not fully created. \n"
-                               "Use `ldi list` to get the list of "
+            raise CommandError("The repository '%s' is not fully created. \n" \
+                               "Use `ldi list` to get the list of " \
                                "available repositories." % destdir)
 
     def process(self):
@@ -260,8 +260,8 @@ class Publish(Upload):
                     # you can add further tests here
                     changes.append(filename)
                 else:
-                    msg = "%s is not available in %s's incoming queue(s)" % \
-                          (filename, self.args[0])
+                    msg = "%s is not available in %s's incoming queue(s)" \
+                          % (filename, self.args[0])
                     raise CommandError(msg)
         else:
             changes = glob.glob(osp.join(incoming, '*.changes'))
@@ -280,6 +280,7 @@ class Publish(Upload):
                                '\n'.join(failed))
 
     def process(self):
+        distribs = set()
         repository = self.args[0]
         workdir = osp.join(self.get_config_value('destination'), repository)
 
@@ -309,13 +310,19 @@ class Publish(Upload):
                 for one_file in all_files:
                     sht.move(one_file, destdir, self.group, 0664)
 
-                self._apt_refresh(distsdir, aptconf, distrib)
+                # mark distribution to be refreshed at the end
+                distribs.add(distrib)
             else:
-                self.logger.info('No package to publish.')
+                self.logger.info('no more package to publish.')
 
             if self.options.refresh:
                 self.logger.info('Force refreshing whole repository %s...' % repository)
                 self._apt_refresh(distsdir, aptconf)
+            elif distribs:
+                for distrib in distribs:
+                    self.logger.info('refreshing distribution %s in repository %s...'
+                                     % (distrib, repository))
+                    self._apt_refresh(distsdir, aptconf, distrib)
 
         finally:
             os.chdir(cwd)
