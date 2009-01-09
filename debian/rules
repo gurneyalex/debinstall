@@ -46,7 +46,7 @@ binary-arch: build install
 	gzip -9 -c ChangeLog > changelog.gz
 	dh_installchangelogs -a
 	dh_installexamples -a
-	dh_installdocs -a changelog.gz
+	dh_installdocs -a changelog.gz README
 	dh_installman -a
 	dh_strip -a
 	dh_link -a

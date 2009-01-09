@@ -4,4 +4,51 @@ debinstall
 
 Tool to manipulate Debian package repositories.
 
-`man ldi` and read documentation in doc/
+
+Before creating repositories; please edit the /etc/debinstall/debinstallrc file.
+Here are the description of the fields:
+
+		[debinstall]
+		group=<system group which packages will belong to>
+		origin=<set an informative message>
+
+		[create]
+		destination=<where the remote repositories are>
+		configurations=<where the configuration files are/var/lib/debinstall
+		default_distribution=<the default distribution if option is missing>
+
+		[upload]
+		check_signature=<check gpg signature of the .changes files>
+		checkers=<list of debian checkers as lintian, ...>
+
+		[publish]
+		sign_repo=<sign the repository by the publisher>
+		keyid=<gpg id of the publisher>
+		check_signature=<check gpg signature of the .changes files>
+		checkers=<list of debian checkers as lintian, ...>
+
+		[archive]
+		archivedir=<not used>
+
+Then, you need to invoke `ldi configure` to create initial directories. Then, if you change some values, please re-run this command and you have to clean up old directory yourself.
+
+	% ldi configure
+
+
+Now, you can add new repositories::
+
+	% ldi create $REPOSITORY -d unstable,stable
+	% ldi create $REPOSITORY -d hardy
+
+
+To upload new packages in incoming queue, use::
+
+	% ldi upload $REPOSITORY <debian_changes_file>.changes
+
+
+Finally, the publisher can now refresh the public repository with::
+
+	% ldi publish $REPOSITORY
+
+
+Read `man ldi` and read documentation in doc/ for more information.
