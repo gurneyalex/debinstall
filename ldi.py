@@ -386,14 +386,19 @@ class List(LdiCommand):
     arguments = "[repository...]"
 
     def process(self):
-        if self.args:
-            repositories = self.args[:]
-        else:
-            repositories = self.get_repo_list()
+        repositories = self.args[:] or self.get_repo_list()
+
         for repository in repositories:
-            print repository, ':', os.listdir(osp.join(self.get_config_value("destination"), repository, "incoming"))
+            if repository in self.get_repo_list():
+                print repository, ':',
+                print os.listdir(osp.join(self.get_config_value("destination"),
+                                                  repository, "incoming"))
+            else:
+                self.logger.fatal('repository %s doesn\'t exist', repository)
+                sys.exit(1)
 
     def get_repo_list(self):
+        """return list of repository and do some checks"""
         dest_dir, conf_dir = [self.get_config_value(confkey)
                               for confkey in ('destination', 'configurations',)]
         repositories = []
@@ -402,7 +407,7 @@ class List(LdiCommand):
             for conf in ('apt', 'ldi'):
                 conf_file = config % (dirname, conf)
                 if not osp.isfile(conf_file):
-                    self.logger.debug('cound not find %s', conf_file)
+                    self.logger.error('could not find %s', conf_file)
                     break
             else:
                 repositories.append(dirname)
