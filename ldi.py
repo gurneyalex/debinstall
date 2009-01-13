@@ -157,7 +157,7 @@ class Upload(LdiCommand):
     name = "upload"
     min_args = 2
     max_args = sys.maxint
-    arguments = "repository [-r | --remove] package.changes [...]"
+    arguments = "repository [-r | --remove] [-d | --distribution] package.changes [...]"
     opt_specs = [('-r', '--remove',
                    {'dest': 'remove',
                     'action': "store_true",
@@ -198,7 +198,7 @@ class Upload(LdiCommand):
         try:
             Changes(changes_file).check_sig(failed)
         except Exception, exc:
-            raise CommandError('%s is not a changes file [%s]' % (changes_file, exc))
+            raise CommandError('%s is not a debian changes file [%s]' % (changes_file, exc))
 
         if failed:
             raise CommandError('The following files are not signed:\n' + \
