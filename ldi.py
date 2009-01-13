@@ -291,7 +291,11 @@ class Publish(Upload):
         # change to repository directory level to have relative pathnames from
         # here (restore current directory in finally statement)
         cwd = os.getcwd()
-        os.chdir(workdir)
+        try:
+            os.chdir(workdir)
+        except Exception, err:
+            self.logger.fatal('no valid repository. Use ldi list to check.')
+            sys.exit(1)
 
         conf_base_dir = self.get_config_value('configurations')
         aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repository)
