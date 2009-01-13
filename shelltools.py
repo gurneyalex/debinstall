@@ -68,3 +68,9 @@ def mkdir(path, group, perms):
     os.makedirs(path)
     set_permissions(path, -1, gid, perms)
 
+def rm(path):
+    """recursively delete a directory tree or file"""
+    if osp.isfile(path):
+        os.remove(path)
+    elif osp.isdir(path):
+        shutil.rmtree(path)
