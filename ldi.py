@@ -49,7 +49,7 @@ def run(args=None):
                 Publish,
                 List,
                 #Archive,
-                #Destroy,
+                Destroy,
                 Configure,
                 ):
         instance = cmd(debug=debug)
@@ -414,17 +414,31 @@ class List(LdiCommand):
         return repositories
 
 
+class Destroy(List):
+    """remove a specified repository and the relative configuration files"""
+    name = "destroy"
+    min_args = 1
+    max_args = sys.maxint
+    arguments = "[repository...]"
+
+    def process(self):
+        for repository in self.args[:]:
+            if repository in self.get_repo_list():
+                dest_dir, conf_dir = [self.get_config_value(confkey)
+                                      for confkey in ('destination', 'configurations',)]
+                sht.rm(osp.join(conf_dir, "%s-apt.conf" % repository))
+                sht.rm(osp.join(conf_dir, "%s-ldi.conf" % repository))
+                sht.rm(osp.join(dest_dir, repository))
+            else:
+                self.logger.fatal('repository %s doesn\'t exist', repository)
+                sys.exit(1)
+
+
 ## class Archive(LdiCommand):
 ##     """cleanup a repository by moving old unused packages to an
 ##     archive directory"""
 ##     name = "archive"
 
-    
-
-## class Destroy(LdiCommand):
-##     """completely remove a repository, its packages and the
-##     configuration files"""
-##     name = 'destroy'
 
 if __name__ == '__main__':
     run()
