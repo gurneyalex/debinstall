@@ -42,7 +42,7 @@ author = "Logilab"
 author_email = "devel@logilab.fr"
 
 # TODO - publish
-web = "http://www.logilab.org/projects/%s" % modname
+web = "http://www.logilab.org/project/%s" % modname
 ftp = "ftp://ftp.logilab.org/pub/%s" % modname
 
 

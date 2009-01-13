@@ -5,7 +5,7 @@ Maintainer: Alexandre Fayolle <afayolle@debian.org>
 Uploaders: Julien Jehannet <julien.jehannet@logilab.fr>
 Build-Depends: debhelper (>= 5.0.38),  python (>=2.4), python-central (>=0.5.6)
 XS-Python-Version: current
-Homepage: http://www.logilab.org/projects/debinstall
+Homepage: http://www.logilab.org/project/debinstall
 Standards-Version: 3.8.0
 
 Package: debinstall
