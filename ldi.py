@@ -211,9 +211,15 @@ class Upload(LdiCommand):
                                "Use `ldi list` to get the list of " \
                                "available repositories." % destdir)
 
+    def _check_changes_file(self, changes_file):
+        """basic tests to determine debian changes file"""
+        if not (osp.isfile(changes_file) and changes_file.endswith('.changes')):
+            raise CommandError('%s is not a debian changes file' % changes_file)
+
     def process(self):
         repository = self.args[0]
         for filename in self.args[1:]:
+            self._check_changes_file(filename)
             if self.options.distribution:
                 distrib = self.options.distribution
             else:
@@ -250,10 +256,9 @@ class Publish(Upload):
         changes = []
         incoming = osp.join(workdir, 'incoming', '**')
         for changes_file in self.args[1:]:
+            self._check_changes_file(changes_file)
             if osp.isabs(changes_file):
-                raise CommandError('%s is not a relative path' % changes_file)
-            if not changes_files.endswith('.changes'):
-                raise CommandError('%s is not a changes file' % changes_files)
+                raise CommandError('%s is not a relative path to the repository' % changes_file)
             for filename in glob.glob(osp.join(incoming, changes_file)):
                 if osp.isfile(filename):
                     # you can add further tests here
