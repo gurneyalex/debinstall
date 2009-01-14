@@ -14,13 +14,23 @@
 # this program; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+import sys
 import os.path as osp
 import logging
 from logilab.common.logging_ext import ColorFormatter
 
+
+isatty = hasattr(sys.stdout, 'isatty') and sys.stdout.isatty()
+
 CONSOLE = logging.StreamHandler()
-formatter = ColorFormatter('[%(levelname)-8s] %(name)-10s: %(message)s')
+LOG_FORMAT = '[%(levelname)-8s] %(name)-10s: %(message)s'
+
+if not isatty or '--no-color' in sys.argv:
+    formatter = logging.Formatter(LOG_FORMAT)
+else:
+    formatter = ColorFormatter(LOG_FORMAT)
 CONSOLE.setFormatter(formatter)
+
 if osp.isdir(osp.join(osp.dirname(__file__), '.hg')):
     CONSOLE.setLevel(logging.DEBUG)
     logger = logging.getLogger('root')

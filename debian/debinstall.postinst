@@ -1,6 +1,11 @@
 #!/bin/sh -e
 
-adduser --system --group debinstall --shell /bin/rbash
+adduser --system --no-create-home --group debinstall
+
+# Not enable yet, please check this link if interested:
+# https://www.logilab.net/elo/ticket/6756
+#adduser --system --group debinstall --shell /bin/rbash
+
 chown debinstall:debinstall /usr/bin/ldi
 chmod 6755 /usr/bin/ldi
 

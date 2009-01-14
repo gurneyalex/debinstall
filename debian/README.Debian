@@ -1,0 +1,10 @@
+debinstall
+==========
+
+By default, the debinstall user is created as a system user (i.e. without home and shell).
+It can be interesting in some case to change that behaviour (ssh access, home dir, ...)::
+
+	# deluser debinstall
+	# adduser --system --group debinstall --shell /bin/rbash
+
+Be cautious if files already exist with the previous uid of debinstall.

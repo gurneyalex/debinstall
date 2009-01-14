@@ -22,7 +22,7 @@ import os.path as osp
 from ConfigParser import ConfigParser
 import logging
 
-from debinstall.logging_handlers import CONSOLE
+from debinstall.logging_handlers import CONSOLE, isatty
 
 
 class Command(object):
@@ -84,6 +84,14 @@ class LdiCommand(Command):
          {'dest': 'configfile',
           'default':'/etc/debinstall/debinstallrc',
           'help': 'configuration file (default: /etc/debinstall/debinstallrc)'}
+         ),
+        # just for having the option in the help documentation
+        # see logging_handlers.py for details
+        ('', '--no-color',
+         {'dest': 'no_color',
+          'default': not isatty,
+          'action': 'store_true',
+          'help': "print log messages without color"}
          ),
         ]
 
