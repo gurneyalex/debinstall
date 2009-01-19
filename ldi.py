@@ -23,6 +23,7 @@ import os.path as osp
 import glob
 
 from logilab.common import optparser
+from logilab.common.shellutils import acquire_lock, release_lock
 
 from debinstall.debfiles import Changes
 from debinstall.command import LdiCommand, CommandError
@@ -31,6 +32,7 @@ from debinstall import apt_ftparchive
 from debinstall.__pkginfo__ import version
 from debinstall import aptconffile
 
+LOCK_FILE='/var/lock/debinstall'
 
 def run(args=None):
     if sys.argv[0] == "-c": # launched by binary script using python -c
@@ -301,6 +303,9 @@ class Publish(Upload):
         aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repository)
         distsdir = osp.join(self.get_config_value('destination'),
                             repository, 'dists')
+
+        # we have to launch the publication sequentially
+        acquire_lock(LOCK_FILE, max_try=3, delay=5)
         try:
             changes_files = self._get_incoming_changes(workdir)
             for filename in changes_files:
@@ -333,6 +338,7 @@ class Publish(Upload):
                     self._apt_refresh(distsdir, aptconf, distrib)
 
         finally:
+            release_lock(LOCK_FILE)
             os.chdir(cwd)
 
     def _sign_repo(self, repository):
