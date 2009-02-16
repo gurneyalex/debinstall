@@ -38,9 +38,8 @@ class Command(object):
         self.args = None
         self.repo_name = None
         self.logger = logging.getLogger('debinstall.%s' % self.name)
-        if debug:
-            self.logger.setLevel(logging.DEBUG)
         self.logger.addHandler(CONSOLE)
+        self.logger.propagate = False
 
     def register(self, option_parser):
         option_parser.add_command(self.name,

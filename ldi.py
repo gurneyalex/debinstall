@@ -112,7 +112,7 @@ class Create(LdiCommand):
         ldiconf = osp.join(conf_base_dir, '%s-ldi.conf' % repo_name)
 
         if osp.isfile(aptconf) or osp.isfile(ldiconf):
-            self.logger.info("The repository '%s' already exists" % repo_name)
+            self.logger.warning("The repository '%s' already exists" % repo_name)
             aptconffile.writeconf(aptconf, self.group, 0664, distnames, origin)
             self.logger.info("New distribution %s was added in the aptconf file %s"
                              % (','.join(distnames), aptconf))
@@ -127,18 +127,18 @@ class Create(LdiCommand):
                     raise CommandError(message)
 
             from debinstall import ldiconffile
-            self.logger.info('writing ldiconf to %s', ldiconf)
+            self.logger.debug('writing ldiconf to %s', ldiconf)
             ldiconffile.writeconf(ldiconf, self.group, 0664,
                                   distnames,
                                   self.options.source_repositories,
                                   self.options.packages)
 
             if self.options.aptconffile is not None:
-                self.logger.info('copying %s to %s',
-                                 self.options.aptconffile, aptconf)
+                self.logger.debug('copying %s to %s',
+                                  self.options.aptconffile, aptconf)
                 sht.copy(self.options.aptconffile, aptconf, self.group, 0755)
             else:
-                self.logger.info('writing default aptconf to %s', aptconf)
+                self.logger.debug('writing default aptconf to %s', aptconf)
                 aptconffile.writeconf(aptconf, self.group, 0664, distnames, origin)
                 self.logger.info('An aptconf file %s has been created.' % aptconf)
 
@@ -148,7 +148,6 @@ class Create(LdiCommand):
             directories.append(osp.join(dest_dir, 'dists', distname))
 
         for directory in directories:
-            self.logger.info('creation of %s', directory)
             try:
                 sht.mkdir(directory, self.group, 02775) # set gid on directories 
             except OSError, exc:

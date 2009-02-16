@@ -31,12 +31,9 @@ else:
     formatter = ColorFormatter(LOG_FORMAT)
 CONSOLE.setFormatter(formatter)
 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 if osp.isdir(osp.join(osp.dirname(__file__), '.hg')):
     CONSOLE.setLevel(logging.DEBUG)
-    logger = logging.getLogger('root')
     logger.setLevel(logging.DEBUG)
-    logger.addHandler(CONSOLE)
-    logger.debug('Using development version')
-else:
-    CONSOLE.setLevel(logging.INFO)
-
+    logging.debug('Using development version')
