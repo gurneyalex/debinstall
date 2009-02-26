@@ -202,8 +202,9 @@ class Upload(LdiCommand):
             raise CommandError('%s is not a debian changes file [%s]' % (changes_file, exc))
 
         if failed:
-            raise CommandError('The following files are not signed:\n' + \
-                               '\n'.join(failed))
+            self.logger.error('The changes file is not properly signed: %s' % changes_file)
+            raise CommandError("Check if the PGP block exists and if the key is in the keyring")
+
         return True
 
     def _check_repository(self, destdir):
@@ -294,7 +295,7 @@ class Publish(Upload):
         cwd = os.getcwd()
         try:
             os.chdir(workdir)
-        except Exception, err:
+        except Exception:
             self.logger.fatal('no valid repository. Use ldi list to check.')
             sys.exit(1)
 
