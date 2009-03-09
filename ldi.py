@@ -21,6 +21,7 @@ import os
 import re
 import os.path as osp
 import glob
+import subprocess
 
 from logilab.common import optparser
 from logilab.common.shellutils import acquire_lock, release_lock
@@ -186,26 +187,20 @@ class Upload(LdiCommand):
         return file_list
 
     def _check_signature(self, changes_file):
-        """return True if the changes files and appropriate dsc files
-        are correctly signed.
-
-        raise CommandError otherwise.
+        """raise CommandError if the changes files and appropriate dsc files
+        are not correctly signed
         """
-        if self.get_config_value('check_signature').lower() in ('no', 'false'):
-            self.logger.info("Signature checks skipped")
-            return True
+        if self.get_config_value('check_signature').lower() in ('yes', 'true'):
+            failed = []
+            try:
+                Changes(changes_file).check_sig(failed)
+            except Exception, exc:
+                raise CommandError('%s is not a debian changes file [%s]' % (changes_file, exc))
 
-        failed = []
-        try:
-            Changes(changes_file).check_sig(failed)
-        except Exception, exc:
-            raise CommandError('%s is not a debian changes file [%s]' % (changes_file, exc))
-
-        if failed:
-            self.logger.error('The changes file is not properly signed: %s' % changes_file)
-            raise CommandError("Check if the PGP block exists and if the key is in the keyring")
-
-        return True
+            if failed:
+                self.logger.error('The changes file is not properly signed: %s' % changes_file)
+                subprocess.Popen(['gpg', '--verify', changes_file]).communicate()
+                raise CommandError("Check if the PGP block exists and if the key is in your keyring")
 
     def _check_repository(self, destdir):
         if not (osp.isdir(destdir) or osp.islink(destdir)):
@@ -216,7 +211,7 @@ class Upload(LdiCommand):
     def _check_changes_file(self, changes_file):
         """basic tests to determine debian changes file"""
         if not (osp.isfile(changes_file) and changes_file.endswith('.changes')):
-            raise CommandError('%s is not a debian changes file' % changes_file)
+            raise CommandError('%s is not a Debian changes file' % changes_file)
 
     def process(self):
         repository = self.args[0]
@@ -256,21 +251,30 @@ class Publish(Upload):
 
     def _get_incoming_changes(self, workdir):
         changes = []
-        incoming = osp.join(workdir, 'incoming', '**')
-        for changes_file in self.args[1:]:
-            self._check_changes_file(changes_file)
-            if osp.isabs(changes_file):
-                raise CommandError('%s is not a relative path to the repository' % changes_file)
-            for filename in glob.glob(osp.join(incoming, changes_file)):
-                if osp.isfile(filename):
-                    # you can add further tests here
-                    changes.append(filename)
-                else:
-                    msg = "%s is not available in %s's incoming queue(s)" \
-                          % (filename, self.args[0])
-                    raise CommandError(msg)
-        else:
-            changes = glob.glob(osp.join(incoming, '*.changes'))
+        incoming = osp.join(workdir, 'incoming')
+        for root, dirs, files in os.walk(incoming):
+            for d in dirs:
+                if os.path.islink(osp.join(root, d)):
+                    dirs.remove(d)
+            for f in files:
+                if f.endswith('.changes'):
+                    changes.append(osp.join(root, f))
+        changes = self._filter_incoming_changes(changes)
+        return changes
+
+    def _filter_incoming_changes(self, changes):
+        if self.args[1:]:
+            changes2 = []
+            for f in self.args[1:]:
+                f = osp.abspath(f)
+                path = osp.dirname(f)
+                if os.path.islink(path):
+                    path = osp.join(os.path.dirname(path), os.readlink(path))
+                f = os.path.join(path, osp.basename(f))
+                self._check_changes_file(f)
+                if f in changes:
+                    changes2.append(f)
+            changes = changes2
         return changes
 
     def _run_checkers(self, changes_file):
@@ -278,7 +282,7 @@ class Publish(Upload):
         failed = []
         try:
             Changes(changes_file).run_checkers(checkers, failed)
-        except (Exception,), exc:
+        except Exception, exc:
             raise CommandError('%s is not a changes file [%s]'
                                % (changes_file, exc))
         if failed:
@@ -308,13 +312,14 @@ class Publish(Upload):
         acquire_lock(LOCK_FILE, max_try=3, delay=5)
         try:
             changes_files = self._get_incoming_changes(workdir)
+            if len(changes_files)==0:
+                self.logger.info('No package to publish.')
             for filename in changes_files:
                 # distribution name is the same as the incoming directory name
                 # it lets permit to override a valid suite by a more private
                 # one (for example: contrib, volatile, experimental, ...)
                 distrib = osp.basename(osp.dirname(filename))
                 destdir = osp.join(distsdir, distrib)
-                self.logger.info('publishing packages to %s', destdir)
                 self._check_repository(destdir)
                 self._check_signature(filename)
                 self._run_checkers(filename)
@@ -325,15 +330,13 @@ class Publish(Upload):
 
                 # mark distribution to be refreshed at the end
                 distribs.add(distrib)
-            else:
-                self.logger.info('no more package to publish.')
 
             if self.options.refresh:
                 self.logger.info('Force refreshing whole repository %s...' % repository)
                 self._apt_refresh(distsdir, aptconf)
             elif distribs:
                 for distrib in distribs:
-                    self.logger.info('refreshing distribution %s in repository %s...'
+                    self.logger.info('Refreshing distribution %s in repository %s...'
                                      % (distrib, repository))
                     self._apt_refresh(distsdir, aptconf, distrib)
 
@@ -353,9 +356,7 @@ class Publish(Upload):
         for destdir in glob.glob(osp.join(distsdir, distrib)):
             if osp.isdir(destdir):
                 apt_ftparchive.clean(destdir)
-                self.logger.info('Running apt-ftparchive generate')
                 apt_ftparchive.generate(destdir, aptconf, self.group)
-                self.logger.info('Running apt-ftparchive release')
                 apt_ftparchive.release(destdir, aptconf, self.group,
                                        osp.basename(destdir))
                 self._sign_repo(destdir)
