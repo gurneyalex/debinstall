@@ -39,7 +39,7 @@ def clean(debian_dir):
 def generate(debian_dir, aptconf, group):
     command = ['apt-ftparchive', 'generate', aptconf]
     logger.info('running %s$ %s', os.getcwd(), ' '.join(command))
-    pipe = subprocess.Popen(command)
+    pipe = subprocess.Popen(command, stderr=file('/dev/null'))
     status = pipe.wait()
     if status != 0:
         raise CommandError('apt-ftparchive exited with error status %d'%status)
@@ -49,8 +49,7 @@ def release(debian_dir, aptconf, group, distrib):
     command = ['apt-ftparchive', '-c', aptconf, 'release', debian_dir, '-o',
                'APT::FTPArchive::Release::Suite=%s' % distrib]
     logger.info('running %s$ %s', os.getcwd(), ' '.join(command))
-    pipe = subprocess.Popen(command,
-                            stdout=release)
+    pipe = subprocess.Popen(command, stdout=release)
     status = pipe.wait()
     if status != 0:
         raise CommandError('apt-ftparchive exited with error status %d' % status)
