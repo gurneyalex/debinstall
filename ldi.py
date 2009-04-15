@@ -164,7 +164,7 @@ class Upload(LdiCommand):
                    {'dest': 'remove',
                     'action': "store_true",
                     'default': False,
-                    'help': 'remove debian changes file when uploading',
+                    'help': 'remove debian changes file',
                    }),
                  ('-d', '--distribution',
                    {'dest': 'distribution',
@@ -385,7 +385,7 @@ class Configure(LdiCommand):
         self.logger.info('Configuration successful')
 
 
-class List(LdiCommand):
+class List(Upload):
     """list all repositories and their distributions"""
     name = "list"
     min_args = 0
@@ -397,9 +397,26 @@ class List(LdiCommand):
 
         for repository in repositories:
             if repository in self.get_repo_list():
-                print repository, ':',
-                print os.listdir(osp.join(self.get_config_value("destination"),
-                                                  repository, "incoming"))
+                repository = osp.join(self.get_config_value("destination"), repository)
+                if self.args:
+                    def walkinto(path):
+                        for root, dirs, files in os.walk(path):
+                            if self.options.distribution:
+                                if osp.basename(root) == self.options.distribution:
+                                    for f in sorted(files):
+                                        if f.endswith(".changes"):
+                                            print root.split('/')[4:7], f
+                                    if len(files) == 0:
+                                        print root.split('/')[4:7], '(empty directory)'
+                            else:
+                                for d in dirs:
+                                    print root.split('/')[4:7], d,
+                                    if osp.islink(osp.join(root, d)):
+                                        print '(@ --> %s)' % os.readlink(osp.join(root, d)),
+                                    print
+
+                    walkinto(os.path.join(repository, 'incoming'))
+                    walkinto(os.path.join(repository, 'dists'))
             else:
                 self.logger.fatal('repository %s doesn\'t exist', repository)
                 sys.exit(1)
