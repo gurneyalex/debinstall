@@ -8,5 +8,6 @@ adduser --system --no-create-home --group debinstall
 
 chown debinstall:debinstall /usr/bin/ldi
 chmod 6755 /usr/bin/ldi
+dpkg-statoverride --update --add root root  04755 /usr/bin/gpg
 
 #DEBHELPER#
