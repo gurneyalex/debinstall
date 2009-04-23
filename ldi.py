@@ -174,7 +174,7 @@ class Upload(LdiCommand):
 
     def _get_all_package_files(self, changes_file):
         file_list = []
-        self.logger.info('%sing of %s...' % (self.__class__.__name__, changes_file))
+        self.logger.debug('%sing of %s...' % (self.__class__.__name__, changes_file))
         all_files = Changes(changes_file).get_all_files()
         for candidate in all_files:
             try:
@@ -223,7 +223,8 @@ class Upload(LdiCommand):
                 distrib = Changes(filename).changes['Distribution']
             destdir = osp.join(self.get_config_value('destination'),
                                repository, 'incoming', distrib)
-            self.logger.info('uploading packages to %s for distribution %s',
+            self.logger.info('%sing "%s" to %s for %s distribution',
+                             self.__class__.__name__, osp.basename(filename),
                              destdir, distrib)
             self._check_repository(destdir)
             self._check_signature(filename)
