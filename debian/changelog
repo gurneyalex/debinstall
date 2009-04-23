@@ -1,3 +1,9 @@
+debinstall (2.2.0-2) UNRELEASED; urgency=low
+
+  * debinstall.postinst: added call to dpkg-statoverride to ensure /usr/bin/gpg is suid root
+
+ -- 
+
 debinstall (2.2.0-1) DISTRIBUTION; urgency=low
 
   * New upstream release
