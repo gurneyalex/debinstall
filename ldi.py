@@ -385,6 +385,22 @@ class Configure(LdiCommand):
                                                        self.options.configfile))
         self.logger.info('Configuration successful')
 
+def walkinto(path, distribution):
+    """usefull function to print informations about a repository"""
+    for root, dirs, files in os.walk(path):
+        if distribution:
+            if osp.basename(root) == distribution:
+                for f in sorted(files):
+                    if f.endswith(".changes"):
+                        print root.split('/')[4:7], f
+                if len(files) == 0:
+                    print root.split('/')[4:7], '(empty directory)'
+        else:
+            for d in dirs:
+                print root.split('/')[4:7], d,
+                if osp.islink(osp.join(root, d)):
+                    print '(@ --> %s)' % os.readlink(osp.join(root, d)),
+                print
 
 class List(Upload):
     """list all repositories and their distributions"""
@@ -394,40 +410,25 @@ class List(Upload):
     arguments = "[repository...]"
 
     def process(self):
-        repositories = self.args[:] or self.get_repo_list()
-
+        detectedrepos = self.get_repo_list()
+        repositories = [x for x in self.args if x in detectedrepos]
+        if not self.args:
+            repositories = detectedrepos
         for repository in repositories:
-            if repository in self.get_repo_list():
-                repository = osp.join(self.get_config_value("destination"), repository)
-                if self.args:
-                    def walkinto(path):
-                        for root, dirs, files in os.walk(path):
-                            if self.options.distribution:
-                                if osp.basename(root) == self.options.distribution:
-                                    for f in sorted(files):
-                                        if f.endswith(".changes"):
-                                            print root.split('/')[4:7], f
-                                    if len(files) == 0:
-                                        print root.split('/')[4:7], '(empty directory)'
-                            else:
-                                for d in dirs:
-                                    print root.split('/')[4:7], d,
-                                    if osp.islink(osp.join(root, d)):
-                                        print '(@ --> %s)' % os.readlink(osp.join(root, d)),
-                                    print
-
-                    walkinto(os.path.join(repository, 'incoming'))
-                    walkinto(os.path.join(repository, 'dists'))
-            else:
-                self.logger.fatal('repository %s doesn\'t exist', repository)
-                sys.exit(1)
+            repository = osp.join(self.get_config_value("destination"), repository)
+            walkinto(os.path.join(repository, 'incoming'), self.options.distribution)
+            walkinto(os.path.join(repository, 'dists'), self.options.distribution)
 
     def get_repo_list(self):
         """return list of repository and do some checks"""
-        dest_dir, conf_dir = [self.get_config_value(confkey)
-                              for confkey in ('destination', 'configurations',)]
+        dest_dir = self.get_config_value('destination')
+        conf_dir = self.get_config_value('configurations')
+        
         repositories = []
         for dirname in os.listdir(dest_dir):
+            if os.path.realpath(os.path.join(dest_dir, dirname)) == os.path.realpath(conf_dir):
+                self.logger.info('skipping config directory %s', conf_dir)
+                continue
             config = osp.join(conf_dir, '%s-%s.conf')
             for conf in ('apt', 'ldi'):
                 conf_file = config % (dirname, conf)
@@ -447,8 +448,9 @@ class Destroy(List):
     arguments = "[repository...]"
 
     def process(self):
+        detectedrepos = self.get_repo_list()
         for repository in self.args[:]:
-            if repository in self.get_repo_list():
+            if repository in detectedrepos:
                 dest_dir, conf_dir = [self.get_config_value(confkey)
                                       for confkey in ('destination', 'configurations',)]
                 sht.rm(osp.join(conf_dir, "%s-apt.conf" % repository))
