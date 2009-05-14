@@ -37,12 +37,11 @@ install: build
 	python setup.py install --prefix=debian/debinstall/usr
 	rm -rf debian/debinstall/usr/lib/python*/site-packages/debinstall/tests
 
-
 binary-arch: build install
 	dh_testdir 
 	dh_testroot 
 	dh_install -a
-	dh_pycentral -a
+	dh_pysupport
 	gzip -9 -c ChangeLog > changelog.gz
 	dh_installchangelogs -a
 	dh_installexamples -a

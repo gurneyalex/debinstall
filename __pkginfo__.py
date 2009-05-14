@@ -18,12 +18,12 @@ http://www.logilab.fr/ -- mailto:contact@logilab.fr
 
 import glob
 modname = 'debinstall'
-numversion = (2, 2, 0)
+numversion = (2, 2, 2)
 version = '.'.join([str(num) for num in numversion])
 
 
 license = 'GPL'
-copyright = '''Copyright © 2007-2008 LOGILAB S.A. (Paris, FRANCE).
+copyright = '''Copyright © 2007-2009 LOGILAB S.A. (Paris, FRANCE).
 http://www.logilab.fr/ -- mailto:contact@logilab.fr'''
 
 short_desc = "tool for managing debian repositories at Logilab"
