@@ -355,7 +355,7 @@ class Publish(Upload):
 
     def _apt_refresh(self, distsdir, aptconf, distrib="*"):
         for destdir in glob.glob(osp.join(distsdir, distrib)):
-            if osp.isdir(destdir):
+            if osp.isdir(destdir) and not osp.islink(destdir):
                 apt_ftparchive.clean(destdir)
                 apt_ftparchive.generate(destdir, aptconf, self.group)
                 apt_ftparchive.release(destdir, aptconf, self.group,
