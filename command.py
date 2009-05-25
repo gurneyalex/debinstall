@@ -64,7 +64,7 @@ class Command(object):
         option_parser.max_args = self.max_args
         option_parser.prog  = "%s %s" % (os.path.basename(sys.argv[0]),
                                          self.name)
-        option_parser.usage = "%%prog <options> %s" % (self.arguments)
+        option_parser.usage = "%%prog <options> %s"
 
     def pre_checks(self, option_parser):
         pass

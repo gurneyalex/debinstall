@@ -44,7 +44,8 @@ def run(args=None):
     os.umask(0002)
     if args is None:
         args = sys.argv[1:]
-    usage = """usage: ldi <command> <options> [arguments]"""
+    usage = """usage: %prog <command> <options> [arguments]"""
+    usage+= "\n    or %prog <command> --help for more information about a specific command."
     parser = optparser.OptionParser(usage=usage,
                                     version='debinstall %s' % version)
     for cmd in (Create,
