@@ -1,6 +1,13 @@
 ChangeLog for debinstall
 ========================
 
+2009-06-15  --  2.2.3
+    * #8867: simultaneous ldi not possible
+    * #9197: wrong Suite value in file
+    * #9026: ldi requires gpg to be setuid root
+    * #6565: manage symbolic distributions
+    * #6818: Release checksum seems invalid
+
 2009-01-13  --  2.2.0
     * #6763: ldi publish : change distribution
     * #6861: ldi publish is very quiet
