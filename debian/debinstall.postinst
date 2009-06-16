@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-adduser --system --no-create-home --group debinstall
+adduser --system --no-create-home --group debinstall || true
 
 # Not enable yet, please check this link if interested:
 # https://www.logilab.net/elo/ticket/6756
