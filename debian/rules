@@ -34,7 +34,7 @@ install: build
 	dh_testroot
 	dh_clean -k
 	dh_installdirs /var/lib/debinstall
-	python setup.py install --prefix=debian/debinstall/usr
+	python setup.py -q install --prefix=debian/debinstall/usr
 	rm -rf debian/debinstall/usr/lib/python*/site-packages/debinstall/tests
 
 binary-arch: build install
