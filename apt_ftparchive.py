@@ -45,17 +45,22 @@ def generate(debian_dir, aptconf, group):
         raise CommandError('apt-ftparchive exited with error status %d'%status)
 
 def release(debian_dir, aptconf, group, distrib):
-    release = osp.join(debian_dir, 'Release')
+    release_file = osp.join(debian_dir, 'Release')
     # remove previous release file to avoid including it in list
-    os.unlink(release)
-    release = open(release, 'w')
-    command = ['apt-ftparchive', '-c', aptconf, 'release', debian_dir, '-o',
-               'APT::FTPArchive::Release::Suite=%s' % distrib]
+    os.unlink(release_file)
+    release = open(release_file, 'w')
+    command = ['apt-ftparchive', '-c', aptconf, 'release', debian_dir,
+               '-o', 'APT::FTPArchive::Release::Suite=%s' % distrib,
+               '-o', 'APT::FTPArchive::Release::Codename=%s' % distrib,
+              ]
     logger.info('running %s$ %s', os.getcwd(), ' '.join(command))
     pipe = subprocess.Popen(command, stdout=release)
     status = pipe.wait()
     if status != 0:
         raise CommandError('apt-ftparchive exited with error status %d' % status)
+    release.close()
+    # quick fix to avoid bad Suite entry in Release file
+    os.system('sed -i "/^Suite:/d" %s'% release_file)
 
 def sign(debian_dir, key_id, group):
     releasepath = osp.join(debian_dir, 'Release')
