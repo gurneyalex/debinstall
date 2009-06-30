@@ -47,7 +47,11 @@ def generate(debian_dir, aptconf, group):
 def release(debian_dir, aptconf, group, distrib):
     release_file = osp.join(debian_dir, 'Release')
     # remove previous release file to avoid including it in list
-    os.unlink(release_file)
+    try:
+        os.unlink(release_file)
+    except OSError, exc:
+        # pass silently if file doesn't exist
+        pass
     release = open(release_file, 'w')
     command = ['apt-ftparchive', '-c', aptconf, 'release', debian_dir,
                '-o', 'APT::FTPArchive::Release::Suite=%s' % distrib,
