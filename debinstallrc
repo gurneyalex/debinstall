@@ -3,8 +3,8 @@ group=debinstall
 origin=Logilab S.A.
 
 [create]
-destination=/var/www/debian
-configurations=/var/lib/debinstall
+destination=/var/lib/debinstall/repositories
+configurations=/var/lib/debinstall/configurations
 default_distribution=unstable
 
 [upload]
@@ -18,4 +18,4 @@ check_signature=yes
 checkers=lintian
 
 [archive]
-archivedir=/var/www/debian/archive
+archivedir=/var/lib/debinstall/archives
