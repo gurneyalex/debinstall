@@ -1,5 +1,5 @@
 [debinstall]
-group=devel
+group=debinstall
 origin=Logilab S.A.
 
 [create]

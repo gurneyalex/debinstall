@@ -27,7 +27,7 @@ from debinstall.logging_handlers import CONSOLE
 
 
 logger = logging.getLogger('debinstall.apt-ftparchive')
-logger.setLevel(logging.DEBUG)
+logger.propagate= False
 logger.addHandler(CONSOLE)
 
 def clean(debian_dir):
@@ -38,7 +38,7 @@ def clean(debian_dir):
 
 def generate(debian_dir, aptconf, group):
     command = ['apt-ftparchive', 'generate', aptconf]
-    logger.info('running %s$ %s', os.getcwd(), ' '.join(command))
+    logger.debug('running %s$ %s', os.getcwd(), ' '.join(command))
     pipe = subprocess.Popen(command, stderr=file('/dev/null'))
     status = pipe.wait()
     if status != 0:
@@ -46,23 +46,19 @@ def generate(debian_dir, aptconf, group):
 
 def release(debian_dir, aptconf, group, distrib):
     release_file = osp.join(debian_dir, 'Release')
-    # remove previous release file to avoid including it in list
-    try:
-        os.unlink(release_file)
-    except OSError, exc:
-        # pass silently if file doesn't exist
-        pass
-    release = open(release_file, 'w')
     command = ['apt-ftparchive', '-c', aptconf, 'release', debian_dir,
                '-o', 'APT::FTPArchive::Release::Suite=%s' % distrib,
                '-o', 'APT::FTPArchive::Release::Codename=%s' % distrib,
               ]
-    logger.info('running %s$ %s', os.getcwd(), ' '.join(command))
-    pipe = subprocess.Popen(command, stdout=release)
-    status = pipe.wait()
-    if status != 0:
-        raise CommandError('apt-ftparchive exited with error status %d' % status)
+    logger.debug('running %s$ %s', os.getcwd(), ' '.join(command))
+    pipe = subprocess.Popen(command, stdout=subprocess.PIPE)
+    stdout,_ = pipe.communicate()
+    release = open(release_file, 'w')
+    release.write(stdout)
     release.close()
+    if pipe.returncode != 0:
+        raise CommandError('apt-ftparchive exited with error status %d'
+                           % pipe.returncode)
     # quick fix to avoid bad Suite entry in Release file
     os.system('sed -i "/^Suite:/d" %s'% release_file)
 
