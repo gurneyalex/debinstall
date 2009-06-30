@@ -1,3 +1,9 @@
+debinstall (2.2.4-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Julien Jehannet <julien.jehannet@logilab.fr>  Tue, 16 Jun 2009 12:53:34 +0200
+
 debinstall (2.2.3-2) unstable; urgency=low
 
   * debinstall.postinst: no error if user 'debinstall' already exists
