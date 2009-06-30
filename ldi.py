@@ -261,21 +261,29 @@ class Publish(Upload):
             for f in files:
                 if f.endswith('.changes'):
                     changes.append(osp.join(root, f))
+        self.logger.debug("get incoming changes: %s" % changes)
         changes = self._filter_incoming_changes(changes)
+        self.logger.debug("filtered incoming changes: %s" % changes)
         return changes
 
     def _filter_incoming_changes(self, changes):
         if self.args[1:]:
             changes2 = []
             for f in self.args[1:]:
+                self.logger.debug("filter incoming changes: %s" % f)
                 f = osp.abspath(f)
+                self.logger.debug("filter incoming changes: %s" % f)
                 path = osp.dirname(f)
+                self.logger.debug("filter incoming changes: %s (%s)" % (f,path))
                 if os.path.islink(path):
                     path = osp.join(os.path.dirname(path), os.readlink(path))
+                self.logger.debug("filter incoming changes: %s (%s)" % (f,path))
                 f = os.path.join(path, osp.basename(f))
+                self.logger.debug("filter incoming changes: %s" % f)
                 self._check_changes_file(f)
                 if f in changes:
                     changes2.append(f)
+                    self.logger.debug("queue new changes file: %s" % changes2)
             changes = changes2
         return changes
 
