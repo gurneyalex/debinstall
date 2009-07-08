@@ -22,6 +22,7 @@ import re
 import os.path as osp
 import glob
 import subprocess
+import StringIO
 
 from logilab.common import optparser
 from logilab.common.shellutils import acquire_lock, release_lock
@@ -203,16 +204,57 @@ class Upload(LdiCommand):
                 subprocess.Popen(['gpg', '--verify', changes_file]).communicate()
                 raise CommandError("Check if the PGP block exists and if the key is in your keyring")
 
-    def _check_repository(self, destdir):
-        if not (osp.isdir(destdir) or osp.islink(destdir)):
-            raise CommandError("The repository '%s' is not fully created. \n" \
-                               "Use `ldi list` to get the list of " \
-                               "available repositories." % destdir)
+    def _check_repository(self, repository, section="dists", distrib=None):
+        '''check repository and returns its real path or raise CommandError'''
+        destdir = osp.join(self.get_config_value('destination'), repository, section)
+        if distrib:
+            destdir = osp.join(destdir, distrib)
+        destdir = osp.realpath(destdir)
+
+        if not osp.isdir(destdir):
+            if distrib:
+                raise CommandError("distribution '%s' not found. Use ldi list to "\
+                                   "check" % distrib)
+            raise CommandError("repository '%s' not found. Use ldi list to check"
+                               % repository)
+
+        # Print a warning in case of using symbolic distribution names
+        pointed_distrib = osp.basename(destdir)
+        if distrib and pointed_distrib != distrib:
+            self.logger.warn("considering the pointed distribution '%s' "
+                             "(not symbolic)" % pointed_distrib)
+        return destdir
 
     def _check_changes_file(self, changes_file):
         """basic tests to determine debian changes file"""
         if not (osp.isfile(changes_file) and changes_file.endswith('.changes')):
             raise CommandError('%s is not a Debian changes file' % changes_file)
+
+    def _print_changes_files(self, repository, section, distribution=None):
+        """print information about a repository and inside changes files"""
+        path = self._check_repository(repository, section, distribution)
+        for root, dirs, files in os.walk(path):
+            if distribution:
+                line = StringIO.StringIO()
+                # Only consider pointed distribution (not symbolic)
+                if osp.basename(root) == osp.basename(path):
+                    line.write("%s changes files in %s:\n" % (section.title(), root))
+                    for f in sorted(files):
+                        if f.endswith(".changes"):
+                            line.write(str(root.split('/')[4:7]) + " %s\n" % f)
+                    if len(files) == 0:
+                        line.write(str(root.split('/')[4:7]) + ' (no changes file found)')
+                    self.logger.info(line.getvalue())
+            # Print section content
+            elif dirs and not files:
+                line = StringIO.StringIO()
+                line.write("Available %s section(s) in %s:\n" % (section.title(), root))
+                for d in dirs:
+                    line.write(str(root.split('/')[4:7]) + " %s" % d)
+                    if osp.islink(osp.join(root, d)):
+                        line.write(' (@ --> %s)' % os.readlink(osp.join(root, d)))
+                    line.write('\n')
+                self.logger.info(line.getvalue())
 
     def process(self):
         repository = self.args[0]
@@ -222,10 +264,7 @@ class Upload(LdiCommand):
                 distrib = self.options.distribution
             else:
                 distrib = Changes(filename).changes['Distribution']
-            destdir = osp.join(self.get_config_value('destination'),
-                               repository, 'incoming', distrib)
-            destdir = osp.realpath(destdir)
-            self._check_repository(destdir)
+            destdir = self._check_repository(repository, "incoming", distrib)
             self._check_signature(filename)
 
             all_files = self._get_all_package_files(filename)
@@ -235,6 +274,7 @@ class Upload(LdiCommand):
                 shellutil = sht.copy
             for filename in all_files:
                 shellutil(filename, destdir, self.group, 0775)
+        self._print_changes_files(repository, 'incoming', distrib)
 
 class Publish(Upload):
     """process the incoming queue of a repository"""
@@ -250,19 +290,20 @@ class Publish(Upload):
                    }),
                 ]
 
-    def _get_incoming_changes(self, workdir):
+    def _get_incoming_changes(self, repository):
         changes = []
-        incoming = osp.join(workdir, 'incoming')
-        for root, dirs, files in os.walk(incoming):
+        path = self._check_repository(repository, "incoming")
+        for root, dirs, files in os.walk(path):
             for d in dirs:
                 if os.path.islink(osp.join(root, d)):
                     dirs.remove(d)
             for f in files:
-                if f.endswith('.changes') and self._filter_incoming_changes(f):
+                if f.endswith('.changes') and self._filter_by_arguments(f):
                     changes.append(osp.join(root, f))
         return changes
 
-    def _filter_incoming_changes(self, changes):
+    def _filter_by_arguments(self, changes):
+        '''if changes files are given in command line, only keep them'''
         if self.args[1:]:
             for f in self.args[1:]:
                 return osp.basename(changes) in [osp.basename(f) for f
@@ -284,16 +325,6 @@ class Publish(Upload):
     def process(self):
         distribs = set()
         repository = self.args[0]
-        workdir = osp.join(self.get_config_value('destination'), repository)
-
-        # change to repository directory level to have relative pathnames from
-        # here (restore current directory in finally statement)
-        cwd = os.getcwd()
-        try:
-            os.chdir(workdir)
-        except Exception:
-            self.logger.fatal('no valid repository. Use ldi list to check.')
-            sys.exit(1)
 
         conf_base_dir = self.get_config_value('configurations')
         aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repository)
@@ -303,7 +334,7 @@ class Publish(Upload):
         # we have to launch the publication sequentially
         acquire_lock(LOCK_FILE, max_try=3, delay=5)
         try:
-            changes_files = self._get_incoming_changes(workdir)
+            changes_files = self._get_incoming_changes(repository)
             if len(changes_files)==0:
                 self.logger.info('No package to publish.')
             for filename in changes_files:
@@ -311,9 +342,7 @@ class Publish(Upload):
                 # it lets permit to override a valid suite by a more private
                 # one (for example: contrib, volatile, experimental, ...)
                 distrib = osp.basename(osp.dirname(filename))
-                destdir = osp.join(distsdir, distrib)
-                destdir = osp.realpath(destdir)
-                self._check_repository(destdir)
+                destdir = self._check_repository(repository, "dists", distrib)
                 self._check_signature(filename)
                 self._run_checkers(filename)
 
@@ -335,7 +364,6 @@ class Publish(Upload):
 
         finally:
             release_lock(LOCK_FILE)
-            os.chdir(cwd)
 
     def _sign_repo(self, repository):
         if self.get_config_value("sign_repo").lower() in ('no', 'false'):
@@ -378,49 +406,45 @@ class Configure(LdiCommand):
                                                        self.options.configfile))
         self.logger.info('Configuration successful')
 
-def walkinto(path, distribution):
-    """usefull function to print informations about a repository"""
-    for root, dirs, files in os.walk(path):
-        if distribution:
-            if osp.basename(root) == distribution:
-                for f in sorted(files):
-                    if f.endswith(".changes"):
-                        print root.split('/')[4:7], f
-                if len(files) == 0:
-                    print root.split('/')[4:7], '(empty directory)'
-        else:
-            for d in dirs:
-                print root.split('/')[4:7], d,
-                if osp.islink(osp.join(root, d)):
-                    print '(@ --> %s)' % os.readlink(osp.join(root, d)),
-                print
-
 class List(Upload):
     """list all repositories and their distributions"""
     name = "list"
     min_args = 0
     max_args = sys.maxint
-    arguments = "[repository...]"
+    arguments = "[repositories...] [-d|--distribution]"
+    opt_specs = [
+                 ('-d', '--distribution',
+                   {'dest': 'distribution',
+                    'help': 'list a specific target distribution',
+                   }),
+                 ('-i', '--incoming',
+                   {'dest': 'only_incoming',
+                    'action': "store_true",
+                    'default': False,
+                    'help': 'list only incoming section (not dists)',
+                   }),
+                ]
 
     def process(self):
         detectedrepos = self.get_repo_list()
-        repositories = [x for x in self.args if x in detectedrepos]
         if not self.args:
             repositories = detectedrepos
-        for repository in repositories:
-            repository = osp.join(self.get_config_value("destination"), repository)
-            walkinto(os.path.join(repository, 'incoming'), self.options.distribution)
-            walkinto(os.path.join(repository, 'dists'), self.options.distribution)
+        for repository in self.args:
+            self._print_changes_files(repository, 'incoming', self.options.distribution)
+            if not self.options.only_incoming:
+                self._print_changes_files(repository, 'dists', self.options.distribution)
 
     def get_repo_list(self):
         """return list of repository and do some checks"""
         dest_dir = self.get_config_value('destination')
         conf_dir = self.get_config_value('configurations')
-        
+
         repositories = []
         for dirname in os.listdir(dest_dir):
+            # Some administrators like to keep configuration files
+            # in the same directory that the whole repositories
             if os.path.realpath(os.path.join(dest_dir, dirname)) == os.path.realpath(conf_dir):
-                self.logger.info('skipping config directory %s', conf_dir)
+                self.logger.debug('skipping debinstall configuration directory %s', conf_dir)
                 continue
             config = osp.join(conf_dir, '%s-%s.conf')
             for conf in ('apt', 'ldi'):
