@@ -461,20 +461,79 @@ class Destroy(List):
     name = "destroy"
     min_args = 1
     max_args = sys.maxint
-    arguments = "[repository...]"
+    arguments = "repository [-d | --distribution] [package.changes ...]"
+    opt_specs = [
+                 ('-s', '--section',
+                   {'dest': 'section',
+                    'help': "directory that contains the dist nodes ('incoming' or 'dists')",
+                    'default': 'incoming'
+                   }),
+                 ('-d', '--distribution',
+                   {'dest': 'distribution',
+                    'help': 'force a specific target distribution',
+                   }),
+                ]
 
     def process(self):
-        detectedrepos = self.get_repo_list()
-        for repository in self.args[:]:
-            if repository in detectedrepos:
-                dest_dir, conf_dir = [self.get_config_value(confkey)
-                                      for confkey in ('destination', 'configurations',)]
-                sht.rm(osp.join(conf_dir, "%s-apt.conf" % repository))
-                sht.rm(osp.join(conf_dir, "%s-ldi.conf" % repository))
-                sht.rm(osp.join(dest_dir, repository))
-            else:
-                self.logger.fatal('repository %s doesn\'t exist', repository)
+        repository = self.args[0]
+        self._check_repository(repository)
+
+        confdir = self.get_config_value('configurations')
+        distdir = self.get_config_value("destination")
+        repodir = osp.join(distdir, repository)
+        aptconf = osp.join(confdir, '%s-apt.conf' % repository)
+        ldiconf = osp.join(confdir, '%s-ldi.conf' % repository)
+
+        os.chdir(repodir)
+
+        # Manage deletion of changes files given by command line
+        if self.args[1:]:
+            filenames = self._find_changes_files(repository, self.options.section,
+                                                 self.options.distribution)
+            if not filenames:
+                self.logger.warn("no changes file was deleted in repository '%s'" % repository)
+
+            for filename in filenames:
+                self.perform_changes_file(filename, "", sht.rm)
+        else:
+            try:
+                self.logger.warn("you're asking for a large deletion of data...")
+                import time
+                time.sleep(1)
+                confirm = raw_input("Do you want to continue (type: Yes, I do) ? ")
+            except KeyboardInterrupt:
                 sys.exit(1)
+
+            if confirm != 'Yes, I do':
+                self.logger.info('Aborting.')
+                sys.exit()
+
+            for section in ['incoming', 'dists']:
+                destdir = self._check_repository(repository, section, self.options.distribution)
+                sht.rm(destdir)
+
+            # Erase all repository config by default
+            confdir = self.get_config_value('configurations')
+            destdir = self.get_config_value('destination')
+            repodir = osp.join(destdir, repository)
+            aptconf = osp.join(confdir, '%s-apt.conf' % repository)
+            ldiconf = osp.join(confdir, '%s-ldi.conf' % repository)
+
+            if self.options.distribution is None:
+                for entry in [aptconf, ldiconf, repodir]:
+                    sht.rm(entry)
+                self.logger.info("repository '%s' was deleted" % repository)
+            else:
+                info = {}
+                info['origin'] = self.get_config_value("origin") or '(Unknown)'
+
+                # only one distribution was deleted because _check_repository()
+                # returned an unique distribution path
+                self.logger.info("distribution '%s' was removed in repository '%s'"
+                                 % (self.options.distribution, repository))
+                # write configuration
+                aptconffile.writeconf(confdir, destdir, repository, self.group, 0664, info)
+                self.logger.info("aptfile '%s' was modified" % aptconf)
 
 
 ## class Archive(LdiCommand):
