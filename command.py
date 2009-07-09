@@ -120,7 +120,6 @@ class LdiCommand(Command):
             if self._repo_parser.has_section(section):
                 if self._repo_parser.has_option(section, option):
                     value = self._repo_parser.get(section, option)
-                    self.logger.debug('value for %s: %s', option, value)
                     return value
 
         message = "No option %s in sections %s of %s" % (option, sections,
@@ -141,7 +140,6 @@ class LdiCommand(Command):
             if self._parser.has_section(section):
                 if self._parser.has_option(section, option):
                     value = self._parser.get(section, option)
-                    self.logger.debug('value for %s: %s', option, value)
                     return value
         message = "No option %s in sections %s of %s" % (option, sections,
                                                         self.options.configfile)
