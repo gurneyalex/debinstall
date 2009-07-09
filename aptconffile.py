@@ -17,25 +17,23 @@
 """apt.conf file manipulation"""
 
 import os
-import re
+import glob
+import os.path as osp
 
-def writeconf(dest, group, perms, distributions, origin):
+def writeconf(confdir, destdir, repository, group, perms, info):
     """write a configuration file for use by apt-ftparchive"""
-    fdesc = open(dest, "a")
-    if fdesc.tell() == 0:
-        fdesc.write(APTDEFAULT_APTCONF % {'distributions': ','.join(distributions),
-                                          'origin': origin})
-    else:
-        fdesc.close()
-        oldconf = open(dest).read()
-        old_dists = re.search(r'Suite\s+"(.*?)";', oldconf).group(1).split(',')
-        distributions = list(set(distributions) | set(old_dists))
-        os.unlink(dest)
-        return writeconf(dest, group, perms, distributions, origin)
+    aptconf = osp.join(confdir, '%s-apt.conf.new' % repository)
+    repodir = osp.join(destdir, repository)
+    fdesc = open(aptconf, "a")
+    fdesc.write(APTDEFAULT_APTCONF % info)
 
-    for distribution in distributions:
-        fdesc.write(BINDIRECTORY_APTCONF % {'distribution': distribution})
+    distsdir = osp.join(repodir, 'dists')
+    for distrib in glob.glob(osp.join(distsdir, '*')):
+        if osp.isdir(distrib) and not osp.islink(distrib):
+            distrib = osp.basename(distrib)
+            fdesc.write(BINDIRECTORY_APTCONF % {'distribution': distrib})
     fdesc.close()
+    os.rename(aptconf, aptconf[:-4])
 
 APTDEFAULT_APTCONF = '''\
 APT {
@@ -43,7 +41,6 @@ APT {
     Release {
         Origin "%(origin)s";
         Label  "%(origin)s debian packages repository";
-        Suite  "%(distributions)s";
         Description "created by ldi utility";
     };
   };
