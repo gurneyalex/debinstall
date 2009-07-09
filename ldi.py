@@ -140,9 +140,10 @@ class Upload(LdiCommand):
                 raise CommandError('%s is not a debian changes file [%s]' % (changes_file, exc))
 
             if failed:
-                self.logger.error('The changes file is not properly signed: %s' % changes_file)
+                self.logger.error('the changes file is not properly signed: %s' % changes_file)
+                self.logger.error(failed)
                 subprocess.Popen(['gpg', '--verify', changes_file]).communicate()
-                raise CommandError("Check if the PGP block exists and if the key is in your keyring")
+                raise CommandError("check if the PGP block exists and if the key is in your keyring")
 
     def _check_repository(self, repository, section="dists", distrib=None):
         '''check repository and returns its real path or raise CommandError'''
@@ -155,8 +156,8 @@ class Upload(LdiCommand):
             if distrib:
                 raise CommandError("distribution '%s' not found. Use ldi list to "\
                                    "check" % distrib)
-            raise CommandError("repository '%s' not found. Use ldi list to check"
-                               % repository)
+            raise CommandError("section '%s' in repository '%s' not found. Use ldi list to check"
+                               % (section, repository))
 
         # Print a warning in case of using symbolic distribution names
         pointed_distrib = osp.basename(destdir)
@@ -238,7 +239,7 @@ class Publish(Upload):
             raise CommandError('%s is not a changes file [%s]'
                                % (changes_file, exc))
         if failed:
-            raise CommandError('The following packaging errors were found:\n' +\
+            raise CommandError('the following packaging errors were found:\n' +\
                                '\n'.join(failed))
 
     def process(self):
@@ -255,7 +256,7 @@ class Publish(Upload):
         try:
             changes_files = self._get_incoming_changes(repository)
             if len(changes_files)==0:
-                self.logger.info('No package to publish.')
+                self.logger.info('no package to publish.')
             for filename in changes_files:
                 # distribution name is the same as the incoming directory name
                 # it lets permit to override a valid suite by a more private
@@ -273,11 +274,11 @@ class Publish(Upload):
                 distribs.add(distrib)
 
             if self.options.refresh:
-                self.logger.info('Force refreshing whole repository %s...' % repository)
-                self._apt_refresh(distsdir, aptconf)
+                self.logger.info('force refreshing whole repository %s...' % repository)
+                self._apt_refresh(repodir, aptconf)
             elif distribs:
                 for distrib in distribs:
-                    self.logger.info('Refreshing distribution %s in repository %s...'
+                    self.logger.info('refreshing distribution %s in repository %s...'
                                      % (distrib, repository))
                     self._apt_refresh(distsdir, aptconf, distrib)
 
@@ -287,7 +288,7 @@ class Publish(Upload):
     def _sign_repo(self, repository):
         if self.get_config_value("sign_repo").lower() in ('no', 'false'):
             return
-        self.logger.info('Signing release')
+        self.logger.info('signing release')
         apt_ftparchive.sign(repository,
                             self.get_config_value('keyid'),
                             self.group)
@@ -319,11 +320,12 @@ class Configure(LdiCommand):
             for dirname in directories:
                 sht.mkdir(dirname, self.group, 0775)
         except OSError:
-            raise CommandError('Unable to create the directories %s with the '
+            raise CommandError('unable to create the directories %s with the '
                                'correct permissions.\n'
                                'Please fix this or edit %s'  % (directories,
                                                        self.options.configfile))
         self.logger.info('Configuration successful')
+
 
 class List(Upload):
     """list all repositories and their distributions"""
