@@ -375,42 +375,70 @@ class List(Upload):
     name = "list"
     min_args = 0
     max_args = sys.maxint
-    arguments = "[repositories...] [-d|--distribution]"
+    arguments = "[repository [-d | --distribution] [package.changes ...]]"
     opt_specs = [
                  ('-d', '--distribution',
                    {'dest': 'distribution',
                     'help': 'list a specific target distribution',
                    }),
-                 ('-i', '--incoming',
-                   {'dest': 'only_incoming',
-                    'action': "store_true",
-                    'default': False,
-                    'help': 'list only incoming section (not dists)',
+                 ('-s', '--section',
+                   {'dest': 'section',
+                    'help': "directory that contains the dist nodes ('incoming' or 'dists')",
+                    'default': 'incoming'
                    }),
                 ]
 
     def process(self):
-        detectedrepos = self.get_repo_list()
         if not self.args:
-            repositories = detectedrepos
-        for repository in self.args:
-            self._print_changes_files(repository, 'incoming', self.options.distribution)
-            if not self.options.only_incoming:
-                self._print_changes_files(repository, 'dists', self.options.distribution)
+            destdir = self.get_config_value('destination')
+            repositories = self.get_repo_list()
+            self.logger.info("%s available repositories in %s"
+                             % (len(repositories), destdir))
+            print [repository for repository in repositories]
+        elif len(self.args)==1 and not self.options.distribution:
+            repository = self.args[0]
+            path = self._check_repository(repository, self.options.section)
+            lines = []
+            for root, dirs, files in os.walk(path):
+                if dirs:
+                    for d in dirs:
+                        line = str(root.split('/')[5:7] + [d,])
+                        if osp.islink(osp.join(root, d)):
+                            line += ' (@ --> %s)' % os.readlink(osp.join(root, d))
+                        else:
+                            nb = len(glob.glob(osp.join(root, d, "*.changes")))
+                            if nb:
+                                line += " contains %d changes files" % nb
+                            else:
+                                line += " is empty"
+                        lines.append(line)
+            self.logger.info("%s available %s section(s) in %s"
+                             % (len(lines), self.options.section, root))
+            for line in lines: print line
+        else:
+            repository = self.args[0]
+            self._print_changes_files(repository, self.options.section,
+                                      self.options.distribution)
+
+    def _print_changes_files(self, repository, section, distribution=None):
+        """print information about a repository and inside changes files"""
+        filenames = self._find_changes_files(repository, section, distribution)
+        for f in [filename.rsplit('/', 4)[1:] for filename in filenames]:
+            print f
 
     def get_repo_list(self):
         """return list of repository and do some checks"""
-        dest_dir = self.get_config_value('destination')
-        conf_dir = self.get_config_value('configurations')
+        destdir = self.get_config_value('destination')
+        confdir = self.get_config_value('configurations')
 
         repositories = []
-        for dirname in os.listdir(dest_dir):
+        for dirname in os.listdir(destdir):
             # Some administrators like to keep configuration files
             # in the same directory that the whole repositories
-            if os.path.realpath(os.path.join(dest_dir, dirname)) == os.path.realpath(conf_dir):
-                self.logger.debug('skipping debinstall configuration directory %s', conf_dir)
+            if os.path.realpath(os.path.join(destdir, dirname)) == os.path.realpath(confdir):
+                self.logger.debug('skipping debinstall configuration directory %s', confdir)
                 continue
-            config = osp.join(conf_dir, '%s-%s.conf')
+            config = osp.join(confdir, '%s-%s.conf')
             for conf in ('apt', 'ldi'):
                 conf_file = config % (dirname, conf)
                 if not osp.isfile(conf_file):
