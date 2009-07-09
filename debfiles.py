@@ -36,8 +36,11 @@ class Changes:
                 return osp.join(self.dirname, info['name'])
         return None
 
-    def get_all_files(self):
-        all_files = [self.filename]
+    def get_all_files(self, parts_only=False):
+        if parts_only:
+            all_files = []
+        else:
+            all_files = [self.filename]
         for info in self.changes['Files']:
             all_files.append(osp.join(self.dirname, info['name']))
         return all_files
@@ -55,7 +58,6 @@ class Changes:
             out_wrong = []
         if not check_sig(self.filename):
             status = False
-            out_wrong.append(self.filename)
         dsc = self.get_dsc()
         if dsc is not None and not check_sig(dsc):
             status = False
