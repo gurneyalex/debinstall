@@ -145,7 +145,7 @@ class Upload(LdiCommand):
                 subprocess.Popen(['gpg', '--verify', changes_file]).communicate()
                 raise CommandError("check if the PGP block exists and if the key is in your keyring")
 
-    def _check_repository(self, repository, section="dists", distrib=None):
+    def _check_repository(self, repository, section="incoming", distrib=None):
         '''check repository and returns its real path or raise CommandError'''
         destdir = osp.join(self.get_config_value('destination'), repository, section)
         if distrib:
@@ -160,10 +160,10 @@ class Upload(LdiCommand):
                                % (section, repository))
 
         # Print a warning in case of using symbolic distribution names
-        pointed_distrib = osp.basename(destdir)
-        if distrib and pointed_distrib != distrib:
-            self.logger.warn("considering the pointed distribution '%s' "
-                             "(not symbolic)" % pointed_distrib)
+        dereferenced = osp.basename(destdir)
+        if distrib and  dereferenced != distrib:
+            self.logger.warn("deferences symlinked distribution '%s' to '%s' "
+                             % (distrib, dereferenced))
         return destdir
 
     def _check_changes_file(self, changes_file):
