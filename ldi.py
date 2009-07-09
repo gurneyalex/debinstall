@@ -288,15 +288,18 @@ class Publish(Upload):
         distribs = set()
         repository = self.args[0]
 
-        conf_base_dir = self.get_config_value('configurations')
-        aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repository)
-        distsdir = osp.join(self.get_config_value('destination'),
-                            repository, 'dists')
+        confdir = self.get_config_value('configurations')
+        distdir = self.get_config_value("destination")
+        repodir = osp.join(distdir, repository)
+        aptconf = osp.join(confdir, '%s-apt.conf' % repository)
+        ldiconf = osp.join(confdir, '%s-ldi.conf' % repository)
+
+        os.chdir(repodir)
 
         # we have to launch the publication sequentially
         acquire_lock(LOCK_FILE, max_try=3, delay=5)
         try:
-            changes_files = self._get_incoming_changes(repository)
+            changes_files = self._find_changes_files(repository, "incoming")
             if len(changes_files)==0:
                 self.logger.info('no package to publish.')
             for filename in changes_files:
@@ -308,9 +311,7 @@ class Publish(Upload):
                 self._check_signature(filename)
                 self._run_checkers(filename)
 
-                all_files = self._get_all_package_files(filename)
-                for one_file in all_files:
-                    sht.move(one_file, destdir, self.group, 0664)
+                self.perform_changes_file(filename, destdir, sht.move)
 
                 # mark distribution to be refreshed at the end
                 distribs.add(distrib)
@@ -322,7 +323,7 @@ class Publish(Upload):
                 for distrib in distribs:
                     self.logger.info('refreshing distribution %s in repository %s...'
                                      % (distrib, repository))
-                    self._apt_refresh(distsdir, aptconf, distrib)
+                    self._apt_refresh(repodir, aptconf, distrib)
 
         finally:
             release_lock(LOCK_FILE)
@@ -335,8 +336,8 @@ class Publish(Upload):
                             self.get_config_value('keyid'),
                             self.group)
 
-    def _apt_refresh(self, distsdir, aptconf, distrib="*"):
-        for destdir in glob.glob(osp.join(distsdir, distrib)):
+    def _apt_refresh(self, repodir, aptconf, distrib="*"):
+        for destdir in glob.glob(osp.join(repodir, 'dists', distrib)):
             if osp.isdir(destdir) and not osp.islink(destdir):
                 self.logger.info('generate index files in %s' % destdir)
                 apt_ftparchive.clean(destdir)
