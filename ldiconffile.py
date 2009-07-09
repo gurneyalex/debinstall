@@ -17,8 +17,10 @@
 """ldi.conf manipilation utilities"""
 
 
-def writeconf(dest, group, perms, distributions, sources, packages):
+def writeconf(dest, group, perms, distributions, sources=None, packages=None):
     """generate a ldi.conf file with the appropriate values"""
+    sources = sources or []
+    packages = packages or []
     fdesc = open(dest, "w")
     fdesc.write(DEFAULT_LDICONF % {'sources': ', '.join(sources),
                                    'packages': ', '.join(packages),
