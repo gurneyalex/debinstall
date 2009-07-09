@@ -128,20 +128,6 @@ class Upload(LdiCommand):
                    }),
                 ]
 
-    def _get_all_package_files(self, changes_file):
-        file_list = []
-        self.logger.info('%sing of %s...' % (self.__class__.__name__, changes_file))
-        all_files = Changes(changes_file).get_all_files()
-        for candidate in all_files:
-            try:
-                fdesc = open(candidate)
-                fdesc.close()
-            except IOError, exc:
-                raise CommandError('Cannot read %s from %s: %s' % \
-                                   (candidate, changes_file, exc))
-        file_list += all_files
-        return file_list
-
     def _check_signature(self, changes_file):
         """raise CommandError if the changes files and appropriate dsc files
         are not correctly signed
@@ -221,7 +207,6 @@ class Upload(LdiCommand):
             destdir = self._check_repository(repository, "incoming", distrib)
             self._check_signature(filename)
 
-            all_files = self._get_all_package_files(filename)
             if self.options.remove:
                 shellutil = sht.move
             else:
@@ -243,26 +228,6 @@ class Publish(Upload):
                     'help': 'refresh the whole repository index files'
                    }),
                 ]
-
-    def _get_incoming_changes(self, repository):
-        changes = []
-        path = self._check_repository(repository, "incoming")
-        for root, dirs, files in os.walk(path):
-            for d in dirs:
-                if os.path.islink(osp.join(root, d)):
-                    dirs.remove(d)
-            for f in files:
-                if f.endswith('.changes') and self._filter_by_arguments(f):
-                    changes.append(osp.join(root, f))
-        return changes
-
-    def _filter_by_arguments(self, changes):
-        '''if changes files are given in command line, only keep them'''
-        if self.args[1:]:
-            for f in self.args[1:]:
-                return osp.basename(changes) in [osp.basename(f) for f
-                                                 in self.args[1:]]
-        return True
 
     def _run_checkers(self, changes_file):
         checkers = self.get_config_value('checkers').split()
