@@ -18,11 +18,9 @@
 manipulate debian packages and repositories"""
 import sys
 import os
-import re
 import os.path as osp
 import glob
 import subprocess
-import StringIO
 
 from logilab.common import optparser
 from logilab.common.shellutils import acquire_lock, release_lock
@@ -31,8 +29,8 @@ from debinstall.debfiles import Changes
 from debinstall.command import LdiCommand, CommandError
 from debinstall import shelltools as sht
 from debinstall import apt_ftparchive
-from debinstall.__pkginfo__ import version
 from debinstall import aptconffile
+from debinstall.__pkginfo__ import version
 
 LOCK_FILE='/var/lock/debinstall'
 
@@ -68,93 +66,49 @@ class Create(LdiCommand):
     name = "create"
     arguments = "repository_name"
     opt_specs = [
-        ('-a', '--apt-config',
-         {'dest': "aptconffile",
-          'help': 'apt-ftparchive configuration file for the new repository'}
-         ),
-        ('-s', '--source-repo',
-         {'action':'append',
-          'default': [],
-          'dest': 'source_repositories',
-          'help': "the original repository from which a sub-repository "
-                  "should be created"}
-         ),
-        ('-p', '--package',
-         {'action':'append',
-          'default': [],
-          'dest': 'packages',
-          'help': "a package to extract from a repository into a "
-                  "sub-repository"}
-         ),
         ('-d', '--distribution',
          {'dest': 'distribution',
           'help': 'the name of the distribution in the repository',
           'action': 'append',
+          'default': [],
           }
          ),
         ]
 
     def process(self):
-        try:
-            origin = self.get_config_value("origin")
-        except CommandError, exc:
-            self.logger.warning("%s", exc)
-            self.logger.warning("A default value has been written in your debinstallrc")
-            origin = "(Unknown)"
+        repository = self.args[0]
 
-        dest_base_dir = self.get_config_value("destination")
-        conf_base_dir = self.get_config_value('configurations')
-        raw_distnames = self.options.distribution or \
-                   [self.get_config_value('default_distribution')]
-        distnames = []
-        for name in raw_distnames:
-            distnames += re.split(r'[^\w]+', name)
-        repo_name = self.args[0]
-        dest_dir = osp.join(dest_base_dir, repo_name)
-        aptconf = osp.join(conf_base_dir, '%s-apt.conf' % repo_name)
-        ldiconf = osp.join(conf_base_dir, '%s-ldi.conf' % repo_name)
+        confdir = self.get_config_value('configurations')
+        destdir = self.get_config_value("destination")
+        repodir = osp.join(destdir, repository)
+        aptconf = osp.join(confdir, '%s-apt.conf' % repository)
+        ldiconf = osp.join(confdir, '%s-ldi.conf' % repository)
+        distribs = self.options.distribution or \
+                    [self.get_config_value("default_distribution"),]
 
-        if osp.isfile(aptconf) or osp.isfile(ldiconf):
-            self.logger.warning("The repository '%s' already exists" % repo_name)
-            aptconffile.writeconf(aptconf, self.group, 0664, distnames, origin)
-            self.logger.info("New distribution %s was added in the aptconf file %s"
-                             % (','.join(distnames), aptconf))
-        else:
-            if self.options.source_repositories:
-                if not self.options.packages:
-                    message = 'No packages to extract from the source repositories'
-                    raise CommandError(message)
-            if self.options.packages:
-                if not self.options.source_repositories:
-                    message = 'No source repositories for package extraction'
-                    raise CommandError(message)
-
-            from debinstall import ldiconffile
-            self.logger.debug('writing ldiconf to %s', ldiconf)
-            ldiconffile.writeconf(ldiconf, self.group, 0664,
-                                  distnames,
-                                  self.options.source_repositories,
-                                  self.options.packages)
-
-            if self.options.aptconffile is not None:
-                self.logger.debug('copying %s to %s',
-                                  self.options.aptconffile, aptconf)
-                sht.copy(self.options.aptconffile, aptconf, self.group, 0755)
-            else:
-                self.logger.debug('writing default aptconf to %s', aptconf)
-                aptconffile.writeconf(aptconf, self.group, 0664, distnames, origin)
-                self.logger.info('An aptconf file %s has been created.' % aptconf)
-
-        directories = [dest_dir]
-        for distname in distnames:
-            directories.append(osp.join(dest_dir, 'incoming', distname))
-            directories.append(osp.join(dest_dir, 'dists', distname))
+        # creation of the repository
+        directories = [repodir]
+        for distname in distribs:
+            directories.append(osp.join(repodir, 'incoming', distname))
+            directories.append(osp.join(repodir, 'dists', distname))
+            self.logger.info("new section '%s' will be added in repository '%s'"
+                             % (distname, repository))
 
         for directory in directories:
             try:
-                sht.mkdir(directory, self.group, 02775) # set gid on directories 
+                sht.mkdir(directory, self.group, 02775) # set gid on directories
             except OSError, exc:
                 self.logger.debug(exc)
+
+        # write configuration files
+        info = {}
+        info['origin'] = self.get_config_value("origin") or '(Unknown)'
+        from debinstall import ldiconffile
+        ldiconffile.writeconf(ldiconf, self.group, 0664, distribs)
+        self.logger.info("a new ldifile '%s' was created" % ldiconf)
+        aptconffile.writeconf(confdir, destdir, repository, self.group, 0664, info)
+        self.logger.info("a new aptfile '%s' was created" % aptconf)
+
 
 class Upload(LdiCommand):
     """upload a new package to the incoming queue of a repository"""
