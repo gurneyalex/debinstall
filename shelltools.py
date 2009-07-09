@@ -62,15 +62,15 @@ def move(source, dest, group, perms):
     shutil.move(source, dest)
     set_permissions(dest, -1, group, perms)
 
+def rm(source, *stuffing):
+    """recursively delete a directory tree or file"""
+    if osp.isfile(source):
+        os.remove(source)
+    elif osp.isdir(source):
+        shutil.rmtree(source)
+
 def mkdir(path, group, perms):
     """create a directory with the specified permissions"""
     gid = getgid(group)
     os.makedirs(path)
     set_permissions(path, -1, gid, perms)
-
-def rm(path):
-    """recursively delete a directory tree or file"""
-    if osp.isfile(path):
-        os.remove(path)
-    elif osp.isdir(path):
-        shutil.rmtree(path)
