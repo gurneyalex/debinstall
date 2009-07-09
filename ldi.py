@@ -168,34 +168,9 @@ class Upload(LdiCommand):
 
     def _check_changes_file(self, changes_file):
         """basic tests to determine debian changes file"""
-        if not (osp.isfile(changes_file) and changes_file.endswith('.changes')):
-            raise CommandError('%s is not a Debian changes file' % changes_file)
-
-    def _print_changes_files(self, repository, section, distribution=None):
-        """print information about a repository and inside changes files"""
-        path = self._check_repository(repository, section, distribution)
-        for root, dirs, files in os.walk(path):
-            if distribution:
-                line = StringIO.StringIO()
-                # Only consider pointed distribution (not symbolic)
-                if osp.basename(root) == osp.basename(path):
-                    line.write("%s changes files in %s:\n" % (section.title(), root))
-                    for f in sorted(files):
-                        if f.endswith(".changes"):
-                            line.write(str(root.split('/')[4:7]) + " %s\n" % f)
-                    if len(files) == 0:
-                        line.write(str(root.split('/')[4:7]) + ' (no changes file found)')
-                    self.logger.info(line.getvalue())
-            # Print section content
-            elif dirs and not files:
-                line = StringIO.StringIO()
-                line.write("Available %s section(s) in %s:\n" % (section.title(), root))
-                for d in dirs:
-                    line.write(str(root.split('/')[4:7]) + " %s" % d)
-                    if osp.islink(osp.join(root, d)):
-                        line.write(' (@ --> %s)' % os.readlink(osp.join(root, d)))
-                    line.write('\n')
-                self.logger.info(line.getvalue())
+        if changes_file.endswith('.changes') and osp.isfile(changes_file):
+            return True
+        raise CommandError('%s is not a Debian changes file' % changes_file)
 
     def process(self):
         repository = self.args[0]
@@ -212,9 +187,76 @@ class Upload(LdiCommand):
                 shellutil = sht.move
             else:
                 shellutil = sht.copy
-            for filename in all_files:
-                shellutil(filename, destdir, self.group, 0775)
-        self._print_changes_files(repository, 'incoming', distrib)
+            self.perform_changes_file(filename, destdir, shellutil)
+
+    def _get_changes_parts(self, changes_file, check_if_exists=True):
+        file_list = []
+        all_files = Changes(changes_file).get_all_files(parts_only=True)
+        if check_if_exists:
+            for candidate in all_files:
+                try:
+                    fdesc = open(candidate)
+                    fdesc.close()
+                except IOError, exc:
+                    raise CommandError('Cannot read %s from %s: %s' % \
+                                       (candidate, changes_file, exc))
+        file_list += all_files
+        return file_list
+
+    def perform_changes_file(self, changes_file, destdir, shellutil=None):
+        if shellutil is None:
+            shellutil = sht.copy
+
+        self.logger.info('%sing of %s...' % (self.__class__.__name__, changes_file))
+        all_files = self._get_changes_parts(changes_file)
+
+        self.logger.debug("[%s] '%s' (%s)" % (shellutil.__name__,
+                                              changes_file,
+                                              osp.basename(destdir)))
+        shellutil(changes_file, destdir, self.group, 0664)
+
+        # In case of multi-arch in same directory, we need to check if parts og
+        # changes files are not required by another changes files
+        if shellutil != sht.copy:
+            mask = "%s*.changes" % changes_file.rsplit('_',1)[0]
+            result = glob.glob(osp.join(destdir, mask))
+            # if another file is matched by mask, we must not erase the parts
+            if result:
+                self.logger.warn('changes file parts are blocked by mask: %s' % mask)
+                import pprint
+                self.logger.debug(pprint.pformat(all_files))
+                return
+
+        for filename in all_files:
+            self.logger.debug("[%s] '%s' (%s)" % (shellutil.__name__,
+                                                  filename,
+                                                  osp.basename(destdir)))
+            shellutil(filename, destdir, self.group, 0664)
+
+    def _find_changes_files(self, repository, section, distrib=None):
+        changes = []
+        path = self._check_repository(repository, section)
+        for root, dirs, files in os.walk(path):
+            if distrib:
+                distrib = osp.basename(osp.realpath(osp.join(root, distrib)))
+            for d in dirs[:]:
+                if osp.islink(osp.join(root, d)):
+                    dirs.remove(d)
+                elif distrib and d != distrib:
+                    dirs.remove(d)
+            for f in files:
+                if f.endswith('.changes') and self._filter_by_arguments(f):
+                    changes.append(osp.join(root, f))
+        return sorted(changes)
+
+    def _filter_by_arguments(self, changes):
+        '''if changes files are given in command line, only keep them'''
+        if self.args[1:]:
+            for f in self.args[1:]:
+                return osp.basename(changes) in [osp.basename(f) for f
+                                                 in self.args[1:]]
+        return True
+
 
 class Publish(Upload):
     """process the incoming queue of a repository"""
