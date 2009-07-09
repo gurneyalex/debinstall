@@ -300,8 +300,10 @@ class Publish(Upload):
         acquire_lock(LOCK_FILE, max_try=3, delay=5)
         try:
             changes_files = self._find_changes_files(repository, "incoming")
-            if len(changes_files)==0:
-                self.logger.info('no package to publish.')
+
+            if not changes_files:
+                self.logger.info("no changes file to publish in repository '%s'" % repository)
+
             for filename in changes_files:
                 # distribution name is the same as the incoming directory name
                 # it lets permit to override a valid suite by a more private
@@ -404,7 +406,7 @@ class List(Upload):
                     for d in dirs:
                         line = str(root.split('/')[5:7] + [d,])
                         if osp.islink(osp.join(root, d)):
-                            line += ' (@ --> %s)' % os.readlink(osp.join(root, d))
+                            line += ' (symlinked to %s)' % os.readlink(osp.join(root, d))
                         else:
                             nb = len(glob.glob(osp.join(root, d, "*.changes")))
                             if nb:
@@ -423,7 +425,12 @@ class List(Upload):
     def _print_changes_files(self, repository, section, distribution=None):
         """print information about a repository and inside changes files"""
         filenames = self._find_changes_files(repository, section, distribution)
-        for f in [filename.rsplit('/', 4)[1:] for filename in filenames]:
+        filenames = [filename.rsplit('/', 4)[1:] for filename in filenames]
+
+        if not filenames:
+            self.logger.warn("no changes file was found in repository '%s'" % repository)
+
+        for f in filenames:
             print f
 
     def get_repo_list(self):
