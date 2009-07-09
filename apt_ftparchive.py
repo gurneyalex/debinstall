@@ -34,23 +34,24 @@ def clean(debian_dir):
     candidates = ['Packages*', 'Source*', 'Content*', 'Release*']
     for candidate in candidates:
         for path in glob(osp.join(debian_dir, candidate)):
+            logger.debug("remove '%s'" % path)
             os.remove(path)
 
 def generate(debian_dir, aptconf, group):
-    command = ['apt-ftparchive', 'generate', aptconf]
-    logger.debug('running %s$ %s', os.getcwd(), ' '.join(command))
-    pipe = subprocess.Popen(command, stderr=file('/dev/null'))
+    command = ['apt-ftparchive', '-q=2', 'generate', aptconf]
+    logger.debug('running command: %s' % ' '.join(command))
+    pipe = subprocess.Popen(command)
     status = pipe.wait()
     if status != 0:
-        raise CommandError('apt-ftparchive exited with error status %d'%status)
+        raise CommandError('apt-ftparchive exited with error status %d' % status)
+    logger.debug('new index files: %s' % debian_dir)
 
 def release(debian_dir, aptconf, group, distrib):
     release_file = osp.join(debian_dir, 'Release')
     command = ['apt-ftparchive', '-c', aptconf, 'release', debian_dir,
-               '-o', 'APT::FTPArchive::Release::Suite=%s' % distrib,
                '-o', 'APT::FTPArchive::Release::Codename=%s' % distrib,
               ]
-    logger.debug('running %s$ %s', os.getcwd(), ' '.join(command))
+    logger.debug('running command: %s' % ' '.join(command))
     pipe = subprocess.Popen(command, stdout=subprocess.PIPE)
     stdout,_ = pipe.communicate()
     release = open(release_file, 'w')
@@ -59,14 +60,13 @@ def release(debian_dir, aptconf, group, distrib):
     if pipe.returncode != 0:
         raise CommandError('apt-ftparchive exited with error status %d'
                            % pipe.returncode)
-    # quick fix to avoid bad Suite entry in Release file
-    os.system('sed -i "/^Suite:/d" %s'% release_file)
+    logger.debug('new Release file: %s' % (osp.join(debian_dir, release_file)))
 
 def sign(debian_dir, key_id, group):
     releasepath = osp.join(debian_dir, 'Release')
     signed_releasepath = releasepath + '.gpg'
     command = ['gpg', '-b', '-a', '--yes', '--default-key', key_id, '-o', signed_releasepath, releasepath]
-    logger.info('running %s$ %s', os.getcwd(), ' '.join(command))
+    logger.debug('running command: %s' % ' '.join(command))
     pipe = subprocess.Popen(command)
     pipe.communicate()
     status = pipe.wait()
