@@ -23,12 +23,10 @@ import os.path as osp
 import glob
 import subprocess
 
-from logilab.common import optparser
-from logilab.common.shellutils import acquire_lock, release_lock
+from logilab.common import optparser, shellutils as sht
 
 from debinstall.debfiles import Changes
 from debinstall.command import LdiCommand, CommandError
-from debinstall import shelltools as sht
 from debinstall import apt_ftparchive
 from debinstall import aptconffile
 from debinstall.__pkginfo__ import version
@@ -99,7 +97,9 @@ class Create(LdiCommand):
 
         for directory in directories:
             try:
-                sht.mkdir(directory, self.group, 02775) # set gid on directories
+                os.makedirs(directory)
+                sht.chown(directory, group=self.group)
+                os.chmod(destdir, 02775)
             except OSError, exc:
                 self.logger.debug(exc)
 
@@ -187,9 +187,9 @@ class Upload(LdiCommand):
             self._check_signature(filename)
 
             if self.options.remove:
-                shellutil = sht.move
+                shellutil = sht.mv
             else:
-                shellutil = sht.copy
+                shellutil = sht.cp
             self.perform_changes_file(filename, destdir, shellutil)
 
     def perform_changes_file(self, changes_file, destdir, shellutil=sht.cp):
@@ -200,21 +200,12 @@ class Upload(LdiCommand):
         section = osp.basename(osp.dirname(destdir))
         repository = osp.basename(osp.dirname(osp.dirname(destdir)))
 
-    def perform_changes_file(self, changes_file, destdir, shellutil=None):
-        if shellutil is None:
-            shellutil = sht.copy
-
-        self.logger.info('%sing of %s...' % (self.__class__.__name__, changes_file))
-        all_files = self._get_changes_parts(changes_file)
-
-        self.logger.debug("[%s] '%s' (%s)" % (shellutil.__name__,
-                                              changes_file,
-                                              osp.basename(destdir)))
-        shellutil(changes_file, destdir, self.group, 0664)
-
-        # In case of multi-arch in same directory, we need to check if parts og
-        # changes files are not required by another changes files
-        if shellutil != sht.copy:
+        # Logilab uses trivial Debian repository and put all generated files in
+        # the same place. Badly, it occurs some problems in case of several 
+        # supported architectures and multiple Debian revision (in this order)
+        if shellutil != sht.cp:
+            # In case of multi-arch in same directory, we need to check if parts og
+            # changes files are not required by another changes files
             mask = "%s*.changes" % changes_file.rsplit('_',1)[0]
             result = glob.glob(osp.join(destdir, mask))
             # if another file is matched by mask, we must not erase the parts
@@ -228,7 +219,15 @@ class Upload(LdiCommand):
             self.logger.debug("[%s] '%s' (%s)" % (shellutil.__name__,
                                                   filename,
                                                   osp.basename(destdir)))
-            shellutil(filename, destdir, self.group, 0664)
+            if osp.exists(destdir):
+                shellutil(filename, destdir)
+                filename = osp.join(destdir, osp.basename(filename))
+                sht.chown(filename, group=self.group)
+                os.chmod(filename, 0664)
+            else: # sht.rm
+                shellutil(filename)
+        self.logger.info("%sed in '%s' section of the '%s' distribution."
+                         % (self.__class__.__name__, section, distrib))
 
     def _find_changes_files(self, repository, section, distrib=None):
         changes = []
@@ -294,7 +293,7 @@ class Publish(Upload):
         os.chdir(repodir)
 
         # we have to launch the publication sequentially
-        acquire_lock(LOCK_FILE, max_try=3, delay=5)
+        sht.acquire_lock(LOCK_FILE, max_try=3, delay=5)
         try:
             changes_files = self._find_changes_files(repository, "incoming")
 
@@ -310,7 +309,7 @@ class Publish(Upload):
                 self._check_signature(filename)
                 self._run_checkers(filename)
 
-                self.perform_changes_file(filename, destdir, sht.move)
+                self.perform_changes_file(filename, destdir, sht.mv)
 
                 # mark distribution to be refreshed at the end
                 distribs.add(distrib)
@@ -325,7 +324,7 @@ class Publish(Upload):
                     self._apt_refresh(repodir, aptconf, distrib)
 
         finally:
-            release_lock(LOCK_FILE)
+            sht.release_lock(LOCK_FILE)
 
     def _sign_repo(self, repository):
         if self.get_config_value("sign_repo").lower() in ('no', 'false'):
@@ -358,16 +357,18 @@ class Configure(LdiCommand):
                        for confkey in ('destination',
                                        'configurations',
                                        'archivedir')]
-        try:
-            for dirname in directories:
-                sht.mkdir(dirname, self.group, 0775)
-        except OSError:
-            raise CommandError('unable to create the directories %s with the '
-                               'correct permissions.\n'
-                               'Please fix this or edit %s'  % (directories,
-                                                       self.options.configfile))
-        self.logger.info('Configuration successful')
-
+        for dirname in directories:
+            try:
+                os.mkdir(dirname)
+            except OSError:
+                self.logger.warn("directory '%s' already exists" % dirname)
+            try:
+                os.chmod(dirname, 0775)
+            except OSError:
+                self.logger.critical('unable to change permissions on %s' % dirname)
+                raise CommandError('please fix this or edit %s'
+                                   % self.options.configfile)
+        self.logger.info('configuration successful')
 
 class List(Upload):
     """list all repositories and their distributions"""
@@ -517,8 +518,7 @@ class Destroy(List):
             ldiconf = osp.join(confdir, '%s-ldi.conf' % repository)
 
             if self.options.distribution is None:
-                for entry in [aptconf, ldiconf, repodir]:
-                    sht.rm(entry)
+                sht.rm([aptconf, ldiconf, repodir])
                 self.logger.info("repository '%s' was deleted" % repository)
             else:
                 info = {}
