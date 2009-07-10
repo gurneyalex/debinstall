@@ -18,6 +18,7 @@
 manipulate debian packages and repositories"""
 import sys
 import os
+import re
 import os.path as osp
 import glob
 import subprocess
@@ -83,8 +84,10 @@ class Create(LdiCommand):
         repodir = osp.join(destdir, repository)
         aptconf = osp.join(confdir, '%s-apt.conf' % repository)
         ldiconf = osp.join(confdir, '%s-ldi.conf' % repository)
+        # comma separated distribs are accepted here
         distribs = self.options.distribution or \
-                    [self.get_config_value("default_distribution"),]
+                   [self.get_config_value('default_distribution')]
+        distribs, = [re.split(r'[^\w]+', r) for r in distribs]
 
         # creation of the repository
         directories = [repodir]
