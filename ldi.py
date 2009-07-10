@@ -220,14 +220,29 @@ class Upload(LdiCommand):
             # changes files are not required by another changes files
             mask = "%s*.changes" % changes_file.rsplit('_',1)[0]
             result = glob.glob(osp.join(destdir, mask))
-            # if another file is matched by mask, we must not erase the parts
+            result = set(result) - set(arguments)
             if result:
-                self.logger.warn('changes file parts are blocked by mask: %s' % mask)
-                import pprint
-                self.logger.debug(pprint.pformat(all_files))
-                return
+                self.logger.warn("keep intact original changes file's parts "
+                                 "required another architecture(s):\n%s"
+                                 % '\n'.join(result))
+                arguments = [changes_file,]
 
-        for filename in all_files:
+            if not result and pristine_included:
+                # Another search to preserve pristine tarball in case of multiple
+                # revision of the same upstream release
+                mask = "%s*.changes" % changes_file.rsplit('-',1)[0]
+                result = glob.glob(osp.join(destdir, mask))
+                result = set(result) - set(arguments)
+                # Check if the detected changes files really needs the tarball
+                result = [r for r in result if
+                          Changes(r).get_pristine()==pristine_included[0]]
+                if result:
+                    self.logger.warn("keep intact original pristine tarball "
+                                     "required by another Debian revision(s):\n%s"
+                                     % '\n'.join(result))
+                    arguments.remove(pristine_included[0])
+
+        for filename in arguments:
             self.logger.debug("[%s] '%s' (%s)" % (shellutil.__name__,
                                                   filename,
                                                   osp.basename(destdir)))
