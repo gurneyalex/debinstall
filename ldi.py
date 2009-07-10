@@ -192,19 +192,13 @@ class Upload(LdiCommand):
                 shellutil = sht.copy
             self.perform_changes_file(filename, destdir, shellutil)
 
-    def _get_changes_parts(self, changes_file, check_if_exists=True):
-        file_list = []
-        all_files = Changes(changes_file).get_all_files(parts_only=True)
-        if check_if_exists:
-            for candidate in all_files:
-                try:
-                    fdesc = open(candidate)
-                    fdesc.close()
-                except IOError, exc:
-                    raise CommandError('Cannot read %s from %s: %s' % \
-                                       (candidate, changes_file, exc))
-        file_list += all_files
-        return file_list
+    def perform_changes_file(self, changes_file, destdir, shellutil=sht.cp):
+        self.logger.info("%sing of '%s'..." % (self.__class__.__name__, changes_file))
+        arguments = Changes(changes_file).get_all_files()
+        pristine_included = [f for f in arguments if f.endswith('.orig.tar.gz')]
+        distrib = osp.basename(destdir)
+        section = osp.basename(osp.dirname(destdir))
+        repository = osp.basename(osp.dirname(osp.dirname(destdir)))
 
     def perform_changes_file(self, changes_file, destdir, shellutil=None):
         if shellutil is None:
