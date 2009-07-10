@@ -402,7 +402,7 @@ class List(Upload):
             for root, dirs, files in os.walk(path):
                 if dirs:
                     for d in dirs:
-                        line = str(root.split('/')[5:7] + [d,])
+                        line = str(root.split('/')[4:7] + [d,])
                         if osp.islink(osp.join(root, d)):
                             line += ' (symlinked to %s)' % os.readlink(osp.join(root, d))
                         else:
