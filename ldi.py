@@ -175,6 +175,17 @@ class Upload(LdiCommand):
             return True
         raise CommandError('%s is not a Debian changes file' % changes_file)
 
+    def _run_checkers(self, changes_file):
+        checkers = self.get_config_value('checkers').split()
+        failed = []
+        try:
+            Changes(changes_file).run_checkers(checkers, failed)
+        except Exception, exc:
+            raise CommandError('%s is not a changes file [%s]'
+                               % (changes_file, exc))
+        if failed:
+            raise CommandError('the following packaging errors were found:\n' +\
+                               '\n'.join(failed))
     def process(self):
         repository = self.args[0]
         for filename in self.args[1:]:
@@ -185,6 +196,7 @@ class Upload(LdiCommand):
                 distrib = Changes(filename).changes['Distribution']
             destdir = self._check_repository(repository, "incoming", distrib)
             self._check_signature(filename)
+            self._run_checkers(filename)
 
             if self.options.remove:
                 shellutil = sht.mv
@@ -267,18 +279,6 @@ class Publish(Upload):
                     'help': 'refresh the whole repository index files'
                    }),
                 ]
-
-    def _run_checkers(self, changes_file):
-        checkers = self.get_config_value('checkers').split()
-        failed = []
-        try:
-            Changes(changes_file).run_checkers(checkers, failed)
-        except Exception, exc:
-            raise CommandError('%s is not a changes file [%s]'
-                               % (changes_file, exc))
-        if failed:
-            raise CommandError('the following packaging errors were found:\n' +\
-                               '\n'.join(failed))
 
     def process(self):
         distribs = set()
