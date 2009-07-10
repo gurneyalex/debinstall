@@ -36,13 +36,27 @@ class Changes:
                 return osp.join(self.dirname, info['name'])
         return None
 
-    def get_all_files(self, parts_only=False):
-        if parts_only:
-            all_files = []
-        else:
-            all_files = [self.filename]
+    def get_pristine(self):
+        """return the full path to the pristine tarball in the changes file
+        or None if there is no one is included in the upload"""
         for info in self.changes['Files']:
-            all_files.append(osp.join(self.dirname, info['name']))
+            if info['name'].endswith('.orig.tar.gz'):
+                return osp.join(self.dirname, info['name'])
+        return None
+
+    def get_all_files(self, check_if_exists=True):
+        all_files = [self.filename]
+        for info in self.changes['Files']:
+            path = osp.join(self.dirname, info['name'])
+            # TODO Need unit tests
+            if check_if_exists:
+                try:
+                    fdesc = open(path)
+                    fdesc.close()
+                except IOError, exc:
+                    raise IOError('Cannot read %s from %s: %s'
+                                  % (path, self.filename))
+            all_files.append(path)
         return all_files
 
     def check_sig(self, out_wrong=None):
