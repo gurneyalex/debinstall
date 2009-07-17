@@ -533,7 +533,7 @@ class Destroy(List):
             ldiconf = osp.join(confdir, '%s-ldi.conf' % repository)
 
             if self.options.distribution is None:
-                sht.rm([aptconf, ldiconf, repodir])
+                sht.rm(aptconf, ldiconf, repodir)
                 self.logger.info("repository '%s' was deleted" % repository)
             else:
                 info = {}
