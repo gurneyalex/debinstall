@@ -16,9 +16,8 @@
 http://www.logilab.fr/ -- mailto:contact@logilab.fr  
 """
 
-import glob
 modname = 'debinstall'
-numversion = (2, 2, 4)
+numversion = (2, 2, 5)
 version = '.'.join([str(num) for num in numversion])
 
 
