@@ -428,7 +428,7 @@ class List(Upload):
                                 line += " is empty"
                         lines.append(line)
             self.logger.info("%s available %s section(s) in %s"
-                             % (len(lines), self.options.section, root))
+                             % (len(lines), self.options.section, path))
             for line in lines: print line
         else:
             repository = self.args[0]
