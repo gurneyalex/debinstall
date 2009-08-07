@@ -1,3 +1,9 @@
+debinstall (2.2.5-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Julien Jehannet <julien.jehannet@logilab.fr>  Thu, 16 Jul 2009 17:07:16 +0200
+
 debinstall (2.2.4-1) unstable; urgency=low
 
   * debinstall.dirs: create default repository into /var/debinstall
