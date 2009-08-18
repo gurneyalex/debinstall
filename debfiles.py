@@ -16,6 +16,7 @@
 
 """helper classes to manipulate debian packages"""
 import os.path as osp
+import sys
 
 from debian_bundle import deb822
 
@@ -54,8 +55,8 @@ class Changes:
                     fdesc = open(path)
                     fdesc.close()
                 except IOError, exc:
-                    raise IOError('Cannot read %s from %s: %s'
-                                  % (path, self.filename))
+                    sys.exit("Cannot read '%s' from %s"
+                             % (info['name'], self.filename))
             all_files.append(path)
         return all_files
 
