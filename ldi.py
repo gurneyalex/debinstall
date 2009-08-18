@@ -151,23 +151,24 @@ class Upload(LdiCommand):
     def _check_repository(self, repository, section="incoming", distrib=None):
         '''check repository and returns its real path or raise CommandError'''
         destdir = osp.join(self.get_config_value('destination'), repository, section)
+        if not osp.isdir(destdir):
+            raise CommandError("repository '%s' not found. Use ldi list to check"
+                               % repository)
+
         if distrib:
             destdir = osp.join(destdir, distrib)
-        destdir = osp.realpath(destdir)
-
-        if not osp.isdir(destdir):
-            if distrib:
+            if not osp.isdir(destdir):
                 raise CommandError("distribution '%s' not found. Use ldi list to "\
                                    "check" % distrib)
-            raise CommandError("section '%s' in repository '%s' not found. Use ldi list to check"
-                               % (section, repository))
 
-        # Print a warning in case of using symbolic distribution names
-        dereferenced = osp.basename(destdir)
-        if distrib and  dereferenced != distrib:
-            self.logger.warn("deferences symlinked distribution '%s' to '%s' "
-                             % (distrib, dereferenced))
-        return destdir
+            # Print a warning in case of using symbolic distribution names
+            destdir = osp.realpath(destdir)
+            dereferenced = osp.basename(destdir)
+            if distrib and  dereferenced != distrib:
+                self.logger.warn("deferences symlinked distribution '%s' to '%s' "
+                                 % (distrib, dereferenced))
+
+        return osp.realpath(destdir)
 
     def _check_changes_file(self, changes_file):
         """basic tests to determine debian changes file"""
@@ -258,7 +259,7 @@ class Upload(LdiCommand):
 
     def _find_changes_files(self, repository, section, distrib=None):
         changes = []
-        path = self._check_repository(repository, section)
+        path = self._check_repository(repository, section, distrib)
         for root, dirs, files in os.walk(path):
             if distrib:
                 distrib = osp.basename(osp.realpath(osp.join(root, distrib)))
