@@ -205,12 +205,14 @@ class Upload(LdiCommand):
             self.perform_changes_file(filename, destdir, shellutil)
 
     def perform_changes_file(self, changes_file, destdir, shellutil=sht.cp):
-        self.logger.info("%sing of '%s'..." % (self.__class__.__name__, changes_file))
         arguments = Changes(changes_file).get_all_files()
         pristine_included = [f for f in arguments if f.endswith('.orig.tar.gz')]
         distrib = osp.basename(destdir)
         section = osp.basename(osp.dirname(destdir))
         repository = osp.basename(osp.dirname(osp.dirname(destdir)))
+        self.logger.info("%s/%s: %s %sed" % (repository, distrib,
+                                             osp.basename(changes_file),
+                                             self.__class__.__name__.lower()))
 
         # Logilab uses trivial Debian repository and put all generated files in
         # the same place. Badly, it occurs some problems in case of several 
@@ -253,8 +255,6 @@ class Upload(LdiCommand):
                 os.chmod(filename, 0664)
             else: # sht.rm
                 shellutil(filename)
-        self.logger.info("%sed in '%s' section of the '%s' distribution."
-                         % (self.__class__.__name__, section, distrib))
 
     def _find_changes_files(self, repository, section, distrib=None):
         changes = []
@@ -330,13 +330,13 @@ class Publish(Upload):
                 distribs.add(distrib)
 
             if self.options.refresh:
-                self.logger.info('force refreshing whole repository %s...' % repository)
                 self._apt_refresh(repodir, aptconf)
+                self.logger.info('%s/*: index files generated' % repository)
             elif distribs:
                 for distrib in distribs:
-                    self.logger.info('refreshing distribution %s in repository %s...'
-                                     % (distrib, repository))
                     self._apt_refresh(repodir, aptconf, distrib)
+                    self.logger.info('%s/%s: index files generated'
+                                    % (repository, distrib))
 
         finally:
             sht.release_lock(LOCK_FILE)
@@ -352,7 +352,6 @@ class Publish(Upload):
     def _apt_refresh(self, repodir, aptconf, distrib="*"):
         for destdir in glob.glob(osp.join(repodir, 'dists', distrib)):
             if osp.isdir(destdir) and not osp.islink(destdir):
-                self.logger.info('generate index files in %s' % destdir)
                 apt_ftparchive.clean(destdir)
                 apt_ftparchive.generate(destdir, aptconf, self.group)
                 apt_ftparchive.release(destdir, aptconf, self.group,
