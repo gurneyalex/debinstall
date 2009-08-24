@@ -158,15 +158,15 @@ class Upload(LdiCommand):
         if distrib:
             destdir = osp.join(destdir, distrib)
             if not osp.isdir(destdir):
-                raise CommandError("distribution '%s' not found. Use ldi list to "\
-                                   "check" % distrib)
+                raise CommandError("%s: distribution '%s' not found. Use ldi list to "\
+                                   "check" % (repository, distrib))
 
             # Print a warning in case of using symbolic distribution names
             destdir = osp.realpath(destdir)
             dereferenced = osp.basename(destdir)
             if distrib and  dereferenced != distrib:
-                self.logger.warn("deferences symlinked distribution '%s' to '%s' "
-                                 % (distrib, dereferenced))
+                self.logger.warn("%s: deferences symlinked distribution '%s' to '%s' "
+                                 % (repository, distrib, dereferenced))
 
         return osp.realpath(destdir)
 
@@ -407,19 +407,22 @@ class List(Upload):
         if not self.args:
             destdir = self.get_config_value('destination')
             repositories = self.get_repo_list()
-            self.logger.info("%s available repositories in %s"
+            self.logger.info("%s available repositories in '%s'"
                              % (len(repositories), destdir))
-            print [repository for repository in repositories]
-        elif len(self.args)==1 and not self.options.distribution:
-            repository = self.args[0]
-            path = self._check_repository(repository, self.options.section)
+            repositories = sorted([repository for repository in repositories])
+            print(os.linesep.join(repositories))
+            return
+
+        repository = self.args[0]
+        path = self._check_repository(repository, self.options.section)
+        if len(self.args)==1 and not self.options.distribution:
             lines = []
             for root, dirs, files in os.walk(path):
                 if dirs:
                     for d in dirs:
-                        line = str(root.split('/')[4:7] + [d,])
+                        line = "%s/%s" % (repository, d)
                         if osp.islink(osp.join(root, d)):
-                            line += ' (symlinked to %s)' % os.readlink(osp.join(root, d))
+                            line += ' is symlinked to %s' % os.readlink(osp.join(root, d))
                         else:
                             nb = len(glob.glob(osp.join(root, d, "*.changes")))
                             if nb:
@@ -427,24 +430,29 @@ class List(Upload):
                             else:
                                 line += " is empty"
                         lines.append(line)
-            self.logger.info("%s available %s section(s) in %s"
-                             % (len(lines), self.options.section, path))
+            self.logger.info("%s: %s available %s section(s)"
+                             % (repository, len(lines), self.options.section))
             for line in lines: print line
         else:
-            repository = self.args[0]
             self._print_changes_files(repository, self.options.section,
                                       self.options.distribution)
 
-    def _print_changes_files(self, repository, section, distribution=None):
+        if self.options.section == 'incoming':
+            self.logger.info("use option 'ldi list -s dists %s' to list published content" % repository)
+
+    def _print_changes_files(self, repository, section, distribution):
         """print information about a repository and inside changes files"""
         filenames = self._find_changes_files(repository, section, distribution)
-        filenames = [filename.rsplit('/', 4)[1:] for filename in filenames]
 
         if not filenames:
-            self.logger.warn("no changes file was found in repository '%s'" % repository)
-
-        for f in filenames:
-            print f
+            self.logger.warn("%s/%s: no changes file found" % (repository,
+                                                               distribution))
+        else:
+            self.logger.info("%s/%s: %s available changes files"
+                             % (repository, distribution, len(filenames)))
+            filenames = [filename.rsplit('/', 4)[1:] for filename in filenames]
+            for f in filenames:
+                print("%s/%s: %s" % (f[0], f[2], f[-1]))
 
     def get_repo_list(self):
         """return list of repository and do some checks"""
@@ -511,6 +519,7 @@ class Destroy(List):
         else:
             try:
                 self.logger.warn("you're asking for a large deletion of data...")
+                self.logger.warn("use ldi list command to verify actual content")
                 import time
                 time.sleep(1)
                 confirm = raw_input("Do you want to continue (type: Yes, I do) ? ")

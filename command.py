@@ -37,7 +37,7 @@ class Command(object):
         self.options = None
         self.args = None
         self.repo_name = None
-        self.logger = logging.getLogger('debinstall.%s' % self.name)
+        self.logger = logging.getLogger('ldi.%s' % self.name)
         self.logger.addHandler(CONSOLE)
         self.logger.propagate = False
 
