@@ -23,7 +23,7 @@ from logilab.common.logging_ext import ColorFormatter
 isatty = hasattr(sys.stdout, 'isatty') and sys.stdout.isatty()
 
 CONSOLE = logging.StreamHandler()
-LOG_FORMAT = '[%(levelname)-8s] %(name)-10s: %(message)s'
+LOG_FORMAT = '%(name)s: %(message)s'
 
 if not isatty or '--no-color' in sys.argv:
     formatter = logging.Formatter(LOG_FORMAT)

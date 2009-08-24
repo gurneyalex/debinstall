@@ -14,7 +14,7 @@
 # this program; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-"""wrapper functions to run the apt-ftparchive commande"""
+"""wrapper functions to run the apt-ftparchive command"""
 
 import os
 import os.path as osp
@@ -26,7 +26,7 @@ from debinstall.command import CommandError
 from debinstall.logging_handlers import CONSOLE
 
 
-logger = logging.getLogger('debinstall.apt-ftparchive')
+logger = logging.getLogger('ldi.apt-ftparchive')
 logger.propagate= False
 logger.addHandler(CONSOLE)
 

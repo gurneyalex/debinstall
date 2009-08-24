@@ -28,7 +28,7 @@ http://www.logilab.fr/ -- mailto:contact@logilab.fr'''
 short_desc = "tool for managing debian repositories at Logilab"
 
 long_desc = """
- debinstall provides a tool for managing debian repositories at
+ debinstall provides the ldi command for managing debian repositories at
  Logilab. We hope that it will, one day, be usefull to others.
  .
  It provides functionnality for : 
@@ -37,15 +37,15 @@ long_desc = """
   * more to come.
 """
 
-author = "Logilab"
-author_email = "devel@logilab.fr"
+author = "Logilab S.A."
+author_email = "contact@logilab.fr"
 
 # TODO - publish
 web = "http://www.logilab.org/project/%s" % modname
 ftp = "ftp://ftp.logilab.org/pub/%s" % modname
 
 
-scripts = ['bin/debinstall']
+scripts = ['bin/ldi']
 debian_name = 'debinstall'
 debian_maintainer = 'Alexandre Fayolle' 
 debian_maintainer_email = 'alexandre.fayolle@logilab.fr'
