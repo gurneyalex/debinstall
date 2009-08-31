@@ -17,7 +17,7 @@ http://www.logilab.fr/ -- mailto:contact@logilab.fr
 """
 
 modname = 'debinstall'
-numversion = (2, 2, 5)
+numversion = (2, 2, 6)
 version = '.'.join([str(num) for num in numversion])
 
 

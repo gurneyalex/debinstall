@@ -206,7 +206,7 @@ class Upload(LdiCommand):
             self.perform_changes_file(filename, destdir, shellutil)
 
     def perform_changes_file(self, changes_file, destdir, shellutil=sht.cp):
-        arguments = Changes(changes_file).get_all_files()
+        arguments = set(Changes(changes_file).get_all_files())
         pristine_included = [f for f in arguments if f.endswith('.orig.tar.gz')]
         distrib = osp.basename(destdir)
         section = osp.basename(osp.dirname(destdir))
@@ -219,30 +219,41 @@ class Upload(LdiCommand):
         # the same place. Badly, it occurs some problems in case of several 
         # supported architectures and multiple Debian revision (in this order)
         if shellutil != sht.cp:
-            # In case of multi-arch in same directory, we need to check if parts og
+            # In case of multi-arch in same directory, we need to check if parts of
             # changes files are not required by another changes files
+            # We're excluding the current parsed changes file
             mask = "%s*.changes" % changes_file.rsplit('_',1)[0]
-            result = glob.glob(osp.join(destdir, mask))
-            result = set(result) - set(arguments)
+            changes = glob.glob(osp.join(destdir, mask))
+            changes.remove(changes_file)
+
+            # Find intersection of files shared by several 'changes'
+            result = arguments & set([f for c in changes
+                                        for f in Changes(c).get_all_files()])
+
             if result:
                 self.logger.warn("keep intact original changes file's parts "
                                  "required another architecture(s):\n%s"
-                                 % '\n'.join(result))
-                arguments = [changes_file,]
-
-            if not result and pristine_included:
+                                 % '\n'.join(changes))
+                self.logger.debug("files kept back:\n%s"
+                                  % '\n'.join(result))
+                arguments -= result
+            elif pristine_included:
                 # Another search to preserve pristine tarball in case of multiple
                 # revision of the same upstream release
+                # We're excluding the current parsed changes file
                 mask = "%s*.changes" % changes_file.rsplit('-',1)[0]
-                result = glob.glob(osp.join(destdir, mask))
-                result = set(result) - set(arguments)
+                changes = glob.glob(osp.join(destdir, mask))
+                changes.remove(changes_file)
+
                 # Check if the detected changes files really needs the tarball
-                result = [r for r in result if
+                result = [r for r in changes if
                           Changes(r).get_pristine()==pristine_included[0]]
                 if result:
                     self.logger.warn("keep intact original pristine tarball "
                                      "required by another Debian revision(s):\n%s"
-                                     % '\n'.join(result))
+                                     % '\n'.join(changes))
+                    self.logger.debug("pristine tarball kept back:\n%s"
+                                      % pristine_included[0])
                     arguments.remove(pristine_included[0])
 
         for filename in arguments:
