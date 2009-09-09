@@ -40,15 +40,26 @@ Now, you can add new repositories::
 	% ldi create $REPOSITORY -d unstable,stable
 	% ldi create $REPOSITORY -d hardy
 
+Check the new repository with::
+
+	% ldi list
+	% ldi list $REPOSITORY
 
 To upload new packages in incoming queue, use::
 
 	% ldi upload $REPOSITORY <debian_changes_file>.changes
 
+If you want to use a repository section different from distribution value, you can override with::
 
-Finally, the publisher can now refresh the public repository with::
+	% ldi upload -d $SECTION $REPOSITORY <debian_changes_file>.changes
+
+Finally, the publisher can now send packages to the public repository with::
 
 	% ldi publish $REPOSITORY
+
+Or just refresh the repository index files (Packages*)::
+
+	% ldi publish --refresh $REPOSITORY
 
 
 Read `man ldi` and read documentation in doc/ for more information.
