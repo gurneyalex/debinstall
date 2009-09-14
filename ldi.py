@@ -22,6 +22,9 @@ import re
 import os.path as osp
 import glob
 import subprocess
+from shutil import Error
+from itertools import chain
+import fnmatch
 
 from logilab.common import optparser, shellutils as sht
 
@@ -267,7 +270,10 @@ class Upload(LdiCommand):
                 sht.chown(filename, group=self.group)
                 os.chmod(filename, 0664)
             else: # sht.rm
-                shellutil(filename)
+                try:
+                    shellutil(filename)
+                except Error, err:
+                    self.logger.error(err)
 
     def _find_changes_files(self, repository, section, distrib=None):
         changes = []
@@ -412,6 +418,12 @@ class List(Upload):
                     'help': "directory that contains the dist nodes ('incoming' or 'dists')",
                     'default': 'incoming'
                    }),
+                 ('-o', '--orphaned',
+                   {'dest': 'orphaned',
+                    'action': "store_true",
+                    'default': False,
+                    'help': 'report orphaned packages or files (can be slow)'
+                   }),
                 ]
 
     def process(self):
@@ -429,6 +441,7 @@ class List(Upload):
         if len(self.args)==1 and not self.options.distribution:
             lines = []
             for root, dirs, files in os.walk(path):
+                orphaned = list()
                 if dirs:
                     for d in dirs:
                         line = "%s/%s" % (repository, d)
@@ -440,13 +453,23 @@ class List(Upload):
                                 line += " contains %d changes files" % nb
                             else:
                                 line += " is empty"
+                            if self.options.orphaned:
+                                orphaned = self.get_orphaned_files(path, d)
+                                if orphaned:
+                                    line += " and %d orphaned files" % len(orphaned)
                         lines.append(line)
-            self.logger.info("%s: %s available %s section(s)"
+            self.logger.info("%s: %s available distribution(s) in '%s' section"
                              % (repository, len(lines), self.options.section))
             for line in lines: print line
         else:
             self._print_changes_files(repository, self.options.section,
                                       self.options.distribution)
+            if self.options.orphaned:
+                orphaned = self.get_orphaned_files(path, self.options.distribution)
+                if orphaned:
+                    self.logger.warn("%s: has %s orphaned file(s)"
+                                     % (repository, len(orphaned)))
+                    print '\n'.join(orphaned)
 
         if self.options.section == 'incoming':
             self.logger.info("use option 'ldi list -s dists %s' to list published content" % repository)
@@ -486,6 +509,21 @@ class List(Upload):
             else:
                 repositories.append(dirname)
         return repositories
+
+    def get_orphaned_files(self, repository, distrib):
+        changes_files = (glob.glob(os.path.join(repository, distrib,
+                                                '*.changes')))
+        tracked_files = (Changes(f).get_all_files(check_if_exists=False)
+                         for f in changes_files if f)
+        tracked_files = set(tuple(chain(*tracked_files)))
+
+        untracked_files = set([f for f in glob.glob(os.path.join(repository, distrib, '*'))])
+        orphaned_files = untracked_files - tracked_files
+        orphaned_files -= set(fnmatch.filter(orphaned_files, "*/Packages*"))
+        orphaned_files -= set(fnmatch.filter(orphaned_files, "*/Sources*"))
+        orphaned_files -= set(fnmatch.filter(orphaned_files, "*/Contents*"))
+        orphaned_files -= set(fnmatch.filter(orphaned_files, "*/Release*"))
+        return orphaned_files
 
 
 class Destroy(List):
