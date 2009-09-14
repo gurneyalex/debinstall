@@ -16,6 +16,3 @@ sign_repo=no
 keyid=FFFFFF
 check_signature=yes
 checkers=lintian
-
-[archive]
-archivedir=/var/lib/debinstall/archives
