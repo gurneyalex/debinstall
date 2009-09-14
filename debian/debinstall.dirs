@@ -1,3 +1,2 @@
 var/lib/debinstall/repositories
 var/lib/debinstall/configurations
-var/lib/debinstall/archives
