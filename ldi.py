@@ -92,6 +92,7 @@ class Create(LdiCommand):
         for distname in distribs:
             directories.append(osp.join(repodir, 'incoming', distname))
             directories.append(osp.join(repodir, 'dists', distname))
+            directories.append(osp.join(repodir, 'archive', distname))
             self.logger.info("new section '%s' will be added in repository '%s'"
                              % (distname, repository))
 
@@ -381,8 +382,7 @@ class Configure(LdiCommand):
     def process(self):
         directories = [self.get_config_value(confkey)
                        for confkey in ('destination',
-                                       'configurations',
-                                       'archivedir')]
+                                       'configurations',)]
         for dirname in directories:
             try:
                 os.mkdir(dirname)
@@ -568,10 +568,26 @@ class Destroy(List):
                 self.logger.info("aptfile '%s' was modified" % aptconf)
 
 
-## class Archive(LdiCommand):
-##     """cleanup a repository by moving old unused packages to an
-##     archive directory"""
-##     name = "archive"
+class Archive(List):
+    """archive a repository by moving old unused packages to other directory
+    """
+    name = "archive"
+    min_args = 1
+    max_args = sys.maxint
+    arguments = "repository [package.changes...]"
+
+    def process(self):
+        repository = self.args[0]
+        arguments = self.args[1:]
+
+        for filename in self.args[1:]:
+            self._check_changes_file(filename)
+            if self.options.distribution:
+                distrib = self.options.distribution
+            else:
+                distrib = Changes(filename).changes['Distribution']
+            destdir = self._check_repository(repository, "archive", distrib)
+            self.perform_changes_file(filename, destdir, sht.mv)
 
 
 if __name__ == '__main__':
