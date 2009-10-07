@@ -30,6 +30,7 @@ from logilab.common import optparser, shellutils as sht
 
 from debinstall.debfiles import Changes
 from debinstall.command import LdiCommand, CommandError
+from debinstall.exceptions import *
 from debinstall import apt_ftparchive
 from debinstall import aptconffile
 from debinstall.__pkginfo__ import version
@@ -156,14 +157,14 @@ class Upload(LdiCommand):
         '''check repository and returns its real path or raise CommandError'''
         destdir = osp.join(self.get_config_value('destination'), repository, section)
         if not osp.isdir(destdir):
-            raise CommandError("repository '%s' not found. Use ldi list to check"
-                               % repository)
+            raise RepositoryError("repository '%s' not found. Use ldi list to check"
+                                  % repository)
 
         if distrib:
             destdir = osp.join(destdir, distrib)
             if not osp.isdir(destdir):
-                raise CommandError("%s: distribution '%s' not found. Use ldi list to "\
-                                   "check" % (repository, distrib))
+                raise DistributionError("%s: distribution '%s' not found. Use ldi list to "\
+                                        "check" % (repository, distrib))
 
             # Print a warning in case of using symbolic distribution names
             destdir = osp.realpath(destdir)
@@ -199,7 +200,12 @@ class Upload(LdiCommand):
                 distrib = self.options.distribution
             else:
                 distrib = Changes(filename).changes['Distribution']
-            destdir = self._check_repository(repository, "incoming", distrib)
+            try:
+                destdir = self._check_repository(repository, "incoming", distrib)
+            except DistributionError, err:
+                self.logger.error(err)
+                # drop the current changes file
+                continue
             self._check_signature(filename)
             self._run_checkers(filename)
 
