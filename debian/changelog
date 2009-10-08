@@ -1,8 +1,14 @@
+debinstall (2.3.0-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Julien Jehannet <julien.jehannet@logilab.fr>  Thu, 08 Oct 2009 19:27:31 +0200
+
 debinstall (2.2.6-1) unstable; urgency=low
 
   * New upstream release.
 
- -- Julien Jehannet <julien.jehannet@logilab.fr>  Mon, 31 Aug 2009 21:07:36 +0200
+ -- Julien Jehannet <julien.jehannet@logilab.fr>  Thu, 08 Oct 2009 19:27:12 +0200
 
 debinstall (2.2.5-1) unstable; urgency=low
 
