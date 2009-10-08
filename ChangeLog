@@ -1,6 +1,15 @@
 ChangeLog for debinstall
 ========================
 
+2009-10-08  -- 2.3
+    * #9938: add several repository checks
+    * #6818: correct Release checksum
+    * #2844: multiple architectures support (partially)
+    * #6756: valid debinstall user
+    * #8885: new ldi list options
+    * #7894: ldi destroy improvment
+    * #9929: improve dialog messages
+
 2009-06-15  --  2.2.3
     * #8867: simultaneous ldi not possible
     * #9197: wrong Suite value in file
