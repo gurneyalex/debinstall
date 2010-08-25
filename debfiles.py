@@ -1,4 +1,4 @@
-# Copyright (c) 2007-2008 LOGILAB S.A. (Paris, FRANCE).
+# Copyright (c) 2007-2010 LOGILAB S.A. (Paris, FRANCE).
 # http://www.logilab.fr/ -- mailto:contact@logilab.fr
 #
 # This program is free software; you can redistribute it and/or modify it under
@@ -13,40 +13,59 @@
 # You should have received a copy of the GNU General Public License along with
 # this program; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
 """helper classes to manipulate debian packages"""
+
 import os.path as osp
 import sys
+from subprocess import Popen, PIPE
 
-from debian_bundle import deb822
+from debian import deb822
 
-from debinstall.signature import check_sig
-from debinstall.checkers import ALL_CHECKERS
+from logilab.common.decorators import cached
 
-class Changes:
-    def __init__(self, filename):
-        self.filename = filename
-        self.changes = deb822.Changes(open(filename))
-        self.dirname = osp.dirname(filename)
+class BadSignature(Exception): pass
+
+class CheckerError(Exception): pass
+
+
+def check_sig(filename):
+    """return True if the file is correctly signed"""
+    pipe = Popen(["gpg", "--verify",  filename], stderr=PIPE)
+    pipe.stderr.read()
+    status = pipe.wait()
+    if status != 0:
+        raise BadSignature('%s is not properly signed' % filename)
+
+
+class Changes(object):
+    def __init__(self, path):
+        self.path = path
+        self.filename = osp.basename(path)
+        self.changes = deb822.Changes(open(path))
+        self.dirname = osp.dirname(path)
+
+    def __getitem__(self, key):
+        return self.changes[key]
 
     def get_dsc(self):
         """return the full path to the dsc file in the changes file
         or None if there is no source included in the upload"""
-        for info in self.changes['Files']:
-            if info['name'].endswith('.dsc'):
-                return osp.join(self.dirname, info['name'])
+        for path in self.get_all_files():
+            if path.endswith('.dsc'):
+                return path
         return None
 
     def get_pristine(self):
         """return the full path to the pristine tarball in the changes file
         or None if there is no one is included in the upload"""
-        for info in self.changes['Files']:
-            if info['name'].endswith('.orig.tar.gz'):
-                return osp.join(self.dirname, info['name'])
+        for path in self.get_all_files():
+            if path.endswith('.orig.tar.gz'):
+                return path
         return None
 
+    @cached
     def get_all_files(self, check_if_exists=True):
-        all_files = [self.filename]
+        all_files = set((self.path,))
         for info in self.changes['Files']:
             path = osp.join(self.dirname, info['name'])
             # TODO Need unit tests
@@ -55,39 +74,31 @@ class Changes:
                     fdesc = open(path)
                     fdesc.close()
                 except IOError, exc:
-                    sys.exit("Cannot read '%s' from %s"
-                             % (info['name'], self.filename))
-            all_files.append(path)
+                    raise Exception("Cannot read '%s' from %s"
+                                    % (info['name'], self.path))
+            all_files.add(path)
         return all_files
 
-    def check_sig(self, out_wrong=None):
-        """check the gpg signature of the changes file and the dsc file
-        (if it exists)
-
-        return: True if all checked sigs are correct, False otherwise.
-        out_wrong can be a list, in which case the full paths to the
-        wrong signatures files are appended.
+    def check_sig(self):
+        """check the gpg signature of the changes file and the dsc file (if it
+        exists). Raise an exception if that's not the case.
         """
-        status = True
-        if out_wrong is None:
-            out_wrong = []
-        if not check_sig(self.filename):
-            status = False
+        check_sig(self.path)
         dsc = self.get_dsc()
-        if dsc is not None and not check_sig(dsc):
-            status = False
-            out_wrong.append(dsc)
-        return status
+        if dsc is not None:
+            check_sig(dsc)
 
-    def run_checkers(self, checkers, out_wrong=None):
-        status = True
-        if out_wrong is None:
-            out_wrong = []
-        for checker in ALL_CHECKERS:
-            if checker.command not in checkers:
-                continue
-            success, _, stderr = checker.run(self.filename)
+    def run_checkers(self, checkers):
+        from debinstall.checkers import ALL_CHECKERS
+        errors = []
+        for check in checkers:
+            try:
+                checker = ALL_CHECKERS[check]
+            except KeyError:
+                raise Exception('no such checker %s' % check)
+            success, stdout, stderr = checker.run(self.path)
             if not success:
-                out_wrong += stderr
-            status = status and success
-        return status
+                errors.append('checker %s is in error on %s: \n%s\n%s'
+                              % (check, self.path, stdout, stderr))
+        if errors:
+            raise CheckerError('\n'.join(errors))
