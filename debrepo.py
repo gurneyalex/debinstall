@@ -97,7 +97,7 @@ def release(debian_dir, aptconf):
                '-o', 'APT::FTPArchive::Release::Codename=%s' % distrib]
     logger.debug('running command: %s' % ' '.join(command))
     pipe = subprocess.Popen(command, stdout=subprocess.PIPE)
-    stdout,_ = pipe.communicate()
+    stdout, stderr = pipe.communicate()
     release = open(release_file, 'w')
     release.write(stdout)
     release.close()
