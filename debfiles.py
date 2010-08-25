@@ -16,7 +16,6 @@
 """helper classes to manipulate debian packages"""
 
 import os.path as osp
-import sys
 from subprocess import Popen, PIPE
 
 from debian import deb822
@@ -73,9 +72,9 @@ class Changes(object):
                 try:
                     fdesc = open(path)
                     fdesc.close()
-                except IOError, exc:
-                    raise Exception("Cannot read '%s' from %s"
-                                    % (info['name'], self.path))
+                except IOError, ex:
+                    raise Exception("Cannot read '%s' from %s: %s"
+                                    % (info['name'], self.path, ex))
             all_files.add(path)
         return all_files
 

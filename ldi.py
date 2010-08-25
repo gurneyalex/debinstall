@@ -309,7 +309,7 @@ class Publish(Upload):
     def _find_changes_files(self, path, args, distrib=None):
         changes = []
         if distrib:
-            distrib = osp.basename(osp.realpath(osp.join(root, distrib)))
+            distrib = osp.basename(osp.realpath(osp.join(path, distrib)))
         for root, dirs, files in os.walk(path):
             for d in dirs[:]:
                 if osp.islink(osp.join(root, d)):
