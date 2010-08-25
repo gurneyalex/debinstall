@@ -41,16 +41,9 @@ class Changes_TC(TestCase):
         self.assertUnorderedIterableEquals(signed_files, result)
 
     def test_check_sig(self):
-        wrong_sigs = []
-        self.failUnless(self.signed.check_sig(wrong_sigs))
-        self.assertListEquals(wrong_sigs, [])
-
-        self.failUnless(self.no_source.check_sig(wrong_sigs))
-        self.assertListEquals(wrong_sigs, [])
-
-        self.failIf(self.unsigned.check_sig(wrong_sigs))
-        self.assertListEquals(wrong_sigs, [self.unsigned.filename,
-                                           self.unsigned.get_dsc()])
+        self.signed.check_sig()
+        self.no_source.check_sig()
+        self.assertRaises(BadSignature, self.unsigned.check_sig)
 
 
 if __name__ == '__main__':

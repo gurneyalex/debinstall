@@ -13,15 +13,14 @@
 # You should have received a copy of the GNU General Public License along with
 # this program; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
 """common interface to lintian"""
 
-from subprocess import Popen, PIPE
 import os
+from subprocess import Popen, PIPE
 
 
-class Checker:
-    command = "command"
+class Checker(object):
+    command = None
     options = []
     ok_status = (0, )
     def run(self, changesfile):
@@ -38,9 +37,12 @@ class Checker:
 
     def do_run(self, changesfile):
         argv = [self.command] + self.options + [changesfile]
-        pipe = Popen(argv, stdout=PIPE, stderr=PIPE)
-        stdout = pipe.stdout.readlines()
-        stderr = pipe.stderr.readlines()
+        try:
+            pipe = Popen(argv, stdout=PIPE, stderr=PIPE)
+        except OSError:
+            raise Exception('%s is not installed' % self.command)
+        stdout = pipe.stdout.read()
+        stderr = pipe.stderr.read()
         status = pipe.wait()
         return status, stdout, stderr
 
@@ -49,5 +51,4 @@ class LintianChecker(Checker):
     ok_status = (0, 2)
 
 
-ALL_CHECKERS = [LintianChecker(),
-                ]
+ALL_CHECKERS = {'lintian': LintianChecker()}

@@ -1,4 +1,4 @@
-# Copyright (c) 2007-2008 LOGILAB S.A. (Paris, FRANCE).
+# Copyright (c) 2007-2010 LOGILAB S.A. (Paris, FRANCE).
 # http://www.logilab.fr/ -- mailto:contact@logilab.fr
 #
 # This program is free software; you can redistribute it and/or modify it under
@@ -13,31 +13,74 @@
 # You should have received a copy of the GNU General Public License along with
 # this program; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
 """wrapper functions to run the apt-ftparchive command"""
 
 import os
 import os.path as osp
-from glob import glob
 import subprocess
 import logging
+from glob import glob
 
-from debinstall.command import CommandError
-from debinstall.logging_handlers import CONSOLE
-
+from logilab.common.clcommands import CommandError
 
 logger = logging.getLogger('ldi.apt-ftparchive')
-logger.propagate= False
-logger.addHandler(CONSOLE)
+
+
+def generate_aptconf(repodir, origin='Logilab'):
+    """write a configuration file for use by apt-ftparchive"""
+    path = osp.join(repodir, 'apt.conf')
+    stream = open(path, "w")
+    stream.write(APTDEFAULT_APTCONF % {'origin': origin,
+                                       'repodir': repodir})
+    for distrib in glob(osp.join(repodir, 'dists', '*')):
+        if osp.isdir(distrib) and not osp.islink(distrib):
+            distrib = osp.basename(distrib)
+            stream.write(BINDIRECTORY_APTCONF % {'distribution': distrib})
+    stream.close()
+    return path
+
+APTDEFAULT_APTCONF = '''// Generated file, do not modify !!
+
+APT {
+  FTPArchive {
+    Release {
+        Origin "%(origin)s";
+        Label  "%(origin)s debian packages repository";
+        Description "created by the ldi utility";
+    };
+  };
+};
+
+Default {
+        Packages::Compress ". gzip bzip2";
+        Sources::Compress ". gzip bzip2";
+        Contents::Compress ". gzip bzip2";
+        FileMode 0664;
+};
+
+Dir {
+        ArchiveDir "%(repodir)s/dists";
+};
+'''
+
+BINDIRECTORY_APTCONF = '''\
+
+BinDirectory "%(distribution)s" {
+    Packages "%(distribution)s/Packages";
+    Sources "%(distribution)s/Sources";
+    Contents "%(distribution)s/Contents"
+};
+'''
+
 
 def clean(debian_dir):
-    candidates = ['Packages*', 'Source*', 'Content*', 'Release*']
-    for candidate in candidates:
-        for path in glob(osp.join(debian_dir, candidate)):
+    for mask in ['Packages*', 'Source*', 'Content*', 'Release*']:
+        for path in glob(osp.join(debian_dir, mask)):
             logger.debug("remove '%s'" % path)
             os.remove(path)
 
-def generate(debian_dir, aptconf, group):
+
+def generate(debian_dir, aptconf):
     command = ['apt-ftparchive', '-q=2', 'generate', aptconf]
     logger.debug('running command: %s' % ' '.join(command))
     pipe = subprocess.Popen(command)
@@ -46,11 +89,12 @@ def generate(debian_dir, aptconf, group):
         raise CommandError('apt-ftparchive exited with error status %d' % status)
     logger.debug('new index files: %s' % debian_dir)
 
-def release(debian_dir, aptconf, group, distrib):
+
+def release(debian_dir, aptconf):
+    distrib = osp.basename(debian_dir)
     release_file = osp.join(debian_dir, 'Release')
     command = ['apt-ftparchive', '-c', aptconf, 'release', debian_dir,
-               '-o', 'APT::FTPArchive::Release::Codename=%s' % distrib,
-              ]
+               '-o', 'APT::FTPArchive::Release::Codename=%s' % distrib]
     logger.debug('running command: %s' % ' '.join(command))
     pipe = subprocess.Popen(command, stdout=subprocess.PIPE)
     stdout,_ = pipe.communicate()
@@ -62,7 +106,8 @@ def release(debian_dir, aptconf, group, distrib):
                            % pipe.returncode)
     logger.debug('new Release file: %s' % (osp.join(debian_dir, release_file)))
 
-def sign(debian_dir, key_id, group):
+
+def sign(debian_dir, key_id):
     releasepath = osp.join(debian_dir, 'Release')
     signed_releasepath = releasepath + '.gpg'
     command = ['gpg', '-b', '-a', '--yes', '--default-key', key_id, '-o', signed_releasepath, releasepath]
