@@ -1,18 +1,11 @@
-[debinstall]
-group=debinstall
-origin=Logilab S.A.
-
-[create]
-destination=/var/lib/debinstall/repositories
-configurations=/var/lib/debinstall/configurations
-default_distribution=unstable
+[main]
+repositories-directory=/var/debian/repositories
+group=
+checkers=lintian
 
 [upload]
-check_signature=yes
-checkers=lintian
+check-signature=no
 
 [publish]
-sign_repo=no
-keyid=FFFFFF
-check_signature=yes
-checkers=lintian
+gpg-keyid=
+check-signature=no
