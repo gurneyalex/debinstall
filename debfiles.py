@@ -43,6 +43,9 @@ class Changes(object):
         self.changes = deb822.Changes(open(path))
         self.dirname = osp.dirname(path)
 
+    def __repr__(self):
+        return 'Changes(%s)' % self.path
+
     def __getitem__(self, key):
         return self.changes[key]
 
