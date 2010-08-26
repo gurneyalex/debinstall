@@ -14,21 +14,20 @@ from debinstall.ldi import LDI
 
 def _ldi_checker(checker, inputs):
     test = inputs['apycot']
-    options = inputs['options']
+    options = inputs['options'].copy()
     options['changes-file'] = inputs['changes-file']
-    checker, status = test.run_checker(checker, options)
-    return status
+    return test.run_checker(checker, options)
 
 
 @input('changes-file', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes"',
-       use=True)
-@input('options', 'isinstance(elmt, Options)', '"debian.repository" in elmt')
+       use=True, list=True)
 @output('changes-file', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes.uploaded"',
-        optional=True)
+        list=True)
 @utils.apycotaction('ldi.upload')
 def act_ldi_upload(inputs):
-    status = _ldi_checker('ldi.upload', inputs)
+    checker, status = _ldi_checker('ldi.upload', inputs)
     if status == utils.SUCCESS:
+        
         path = osp.join(inputs['options'].repository, 'incoming',
                         inputs['changes-file'].distribution,
                         osp.basename(inputs['changes-file']))
@@ -37,13 +36,12 @@ def act_ldi_upload(inputs):
 
 
 @input('changes-file', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes"',
-       use=True)
-@input('options', 'isinstance(elmt, Options)', '"debian.repository" in elmt')
+       use=True, list=True)
 @output('changes-file', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes.uploaded"',
-        optional=True)
+        list=True)
 @utils.apycotaction('ldi.publish')
 def act_ldi_publish(inputs):
-    status = _ldi_checker('ldi.publish', inputs)
+    checker, status = _ldi_checker('ldi.publish', inputs)
     if status == utils.SUCCESS:
         path = osp.join(inputs['options'].repository, 'dists',
                         inputs['changes-file'].distribution,
@@ -55,10 +53,10 @@ def act_ldi_publish(inputs):
 # apycot checkers ##############################################################
 
 class LdiLogHandler(logging.Handler):
-    def __init__(self, writer, path):
+    def __init__(self, writer):
         logging.Handler.__init__(self)
         self.writer = writer
-        self.path = path
+        self.path = None
         self.status = utils.SUCCESS
 
     def emit(self, record):
@@ -98,11 +96,14 @@ class LdiUploadChecker(BaseChecker):
         """
         # FIXME https://www.logilab.net/elo/ticket/7967
         os.system('chmod a+rx -R %s ' % osp.dirname(test.deb_packages_dir))
-        repository = self.get_option('repository')
-        debinstallrc = self.get_option('rc-file', LDI.rcfile)
-        changesfile = self.get_option('changes-file').path
-        LDI.logger = logger = LdiLogHandler(self.writer, changesfile)
-        LDI.run_command(self.command, [repository, changesfile], debinstallrc)
+        repository = self.options.get('repository')
+        debinstallrc = self.options.get('rc-file')
+        self.processed = []
+        LDI.init_log(handler=LdiLogHandler(self.writer))
+        changesfiles = [f.path for f in self.options.get('changes-file')]
+        LDI.run_command(self.command, [repository] + changesfiles, debinstallrc)
+        if logger.status == utils.SUCCESS:
+            self.processed.append(filepath)
         return logger.status
 
 register('checker', LdiUploadChecker)
