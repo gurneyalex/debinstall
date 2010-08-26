@@ -266,7 +266,7 @@ class Publish(Upload):
           'help': 'Check package signature before publish',
           }),
         ('gpg-keyid',
-         {'type': 'string', 'group': 'main',
+         {'type': 'string', 'group': 'publish',
           'help': 'GPG identifier of the key to use to sign the repository',
           }),
         ('refresh',
