@@ -26,13 +26,13 @@ def _ldi_checker(checker, inputs):
 @utils.apycotaction('ldi.upload')
 def act_ldi_upload(inputs):
     checker, status = _ldi_checker('ldi.upload', inputs)
-    if status == utils.SUCCESS:
-        
+    result = []
+    for changesfile in checker.processed.get('changesfiles'):
         path = osp.join(inputs['options'].repository, 'incoming',
                         inputs['changes-file'].distribution,
-                        osp.basename(inputs['changes-file']))
-        return {'changes-file': FilePath(path=path, type='debian.changes.uploaded')}
-    return {}
+                        osp.basename(changesfile))
+        result.append(FilePath(path=path, type='debian.changes.uploaded'))
+    return {'changes-file': result}
 
 
 @input('changes-file', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes"',
@@ -42,12 +42,13 @@ def act_ldi_upload(inputs):
 @utils.apycotaction('ldi.publish')
 def act_ldi_publish(inputs):
     checker, status = _ldi_checker('ldi.publish', inputs)
-    if status == utils.SUCCESS:
-        path = osp.join(inputs['options'].repository, 'dists',
+    result = []
+    for changesfile in checker.processed.get('changesfiles', ()):
+        path = osp.join(inputs['options'].repository, 'incoming',
                         inputs['changes-file'].distribution,
-                        osp.basename(inputs['changes-file']))
-        return {'changes-file': FilePath(path=path, type='debian.changes.published')}
-    return {}
+                        osp.basename(changesfile))
+        result.append(FilePath(path=path, type='debian.changes.published'))
+    return {'changes-file': result}
 
 
 # apycot checkers ##############################################################
@@ -98,12 +99,13 @@ class LdiUploadChecker(BaseChecker):
         os.system('chmod a+rx -R %s ' % osp.dirname(test.deb_packages_dir))
         repository = self.options.get('repository')
         debinstallrc = self.options.get('rc-file')
-        self.processed = []
+        self.processed = {}
         LDI.init_log(handler=LdiLogHandler(self.writer))
         changesfiles = [f.path for f in self.options.get('changes-file')]
         LDI.run_command(self.command, [repository] + changesfiles, debinstallrc)
         if logger.status == utils.SUCCESS:
-            self.processed.append(filepath)
+            self.processed['changesfiles'] = changesfile
+        self.processed['repository'] = repository
         return logger.status
 
 register('checker', LdiUploadChecker)
