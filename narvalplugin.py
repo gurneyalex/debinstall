@@ -14,10 +14,8 @@ from debinstall.ldi import LDI
 
 def _ldi_checker(checker, inputs):
     test = inputs['apycot']
-    options = {'repository': inputs['options'].repository,
-               'rc-file': inputs['options'].get('rc-file'),
-               'changes-file': inputs['changes-file'],
-               }
+    options = inputs['options']
+    options['changes-file'] = inputs['changes-file']
     checker, status = test.run_checker(checker, options)
     return status
 
