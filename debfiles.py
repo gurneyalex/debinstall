@@ -18,7 +18,7 @@
 import os.path as osp
 from subprocess import Popen, PIPE
 
-from debian import deb822
+from debian_bundle import deb822
 
 from logilab.common.decorators import cached
 
