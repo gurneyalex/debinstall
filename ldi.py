@@ -106,6 +106,11 @@ class Upload(cli.Command):
     min_args = 2
     arguments = "[options] <repository> <package.changes>..."
     options = OPTIONS[1:] + [
+        ('check-signature',
+         {'type': 'yn', 'group': 'upload',
+          'help': 'Check package signature before upload',
+          'default': True,
+          }),
         ('remove',
          {'short': 'r', 'action': 'store_true',
           'help': 'remove debian changes file',
@@ -175,12 +180,13 @@ class Upload(cli.Command):
         """raise error if the changes files and appropriate dsc files are not
         correctly signed
         """
-        try:
-            changes.check_sig()
-        except BadSignature, ex:
-            raise cli.CommandError(
-                "%s. Check if the PGP block exists and if the key is in your "
-                "keyring" % ex)
+        if self.config.check_signature:
+            try:
+                changes.check_sig()
+            except BadSignature, ex:
+                raise cli.CommandError(
+                    "%s. Check if the PGP block exists and if the key is in your "
+                    "keyring" % ex)
 
     def _run_checkers(self, changes):
         checkers = self.config.checkers
@@ -255,6 +261,10 @@ class Publish(Upload):
     min_args = 1
     arguments = "<repository> [<package.changes>...]"
     options = OPTIONS[1:] + [
+        ('check-signature',
+         {'type': 'string', 'group': 'publish',
+          'help': 'Check package signature before publish',
+          }),
         ('gpg-keyid',
          {'type': 'string', 'group': 'main',
           'help': 'GPG identifier of the key to use to sign the repository',
