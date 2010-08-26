@@ -32,7 +32,7 @@ def _get_changes_files(checker, repository, type):
 @utils.apycotaction('ldi.upload')
 def act_ldi_upload(inputs):
     checker, status = _ldi_checker('ldi.upload', inputs)
-    return {'changes-files': _get_changes_files(checker, inputs['options'].repository,
+    return {'changes-files': _get_changes_files(checker, inputs['options']['debian.repository'],
                                                 'debian.changes.uploaded')}
 
 
@@ -44,7 +44,7 @@ def act_ldi_upload(inputs):
 @utils.apycotaction('ldi.publish')
 def act_ldi_publish(inputs):
     checker, status = _ldi_checker('ldi.publish', inputs)
-    repo = inputs['options'].repository
+    repo = inputs['options']['debian.repository']
     return {'changes-files': _get_changes_files(checker, repo,
                                                 'debian.changes.published'),
             'repository': FilePath(
@@ -65,7 +65,7 @@ class LdiLogHandler(logging.Handler):
     def emit(self, record):
         emitfunc = getattr(self.writer, record.levelname.lower())
         emitfunc(record.getMessage(), path=self.path)
-        if record.levelname == 'ERROR':
+        if record.level == 'ERROR':
             self.status = utils.FAILURE
 
 
@@ -75,7 +75,7 @@ class LdiUploadChecker(BaseChecker):
     id = 'ldi.upload'
     command = 'upload'
     options_def = {
-        'repository': {
+        'debian.repository': {
             'required': True,
             'help': 'ldi repository name',
             },
@@ -105,14 +105,17 @@ class LdiUploadChecker(BaseChecker):
         """
         # FIXME https://www.logilab.net/elo/ticket/7967
         os.system('chmod a+rx -R %s ' % osp.dirname(test.deb_packages_dir))
-        repository = self.options.get('repository')
+        repository = self.options.get('debian.repository')
         debinstallrc = self.options.get('rc-file')
         self.processed = {}
         changesfiles = [f.path for f in self.options.get('changes-files')]
         handler = LdiLogHandler(self.writer)
         cmd = LDI.get_command(self.command, logger=LDI.create_logger(handler))
-        cmd.main_run([repository] + changesfiles, rcfile=debinstallrc)
+        exit_status = cmd.main_run([repository] + changesfiles, rcfile=debinstallrc)
         self._get_back_infos(cmd)
+        if exit_status:
+            self.writer.fatal('ldi %s exited with status %s', self.command, exit_status)
+            self.set_status(utils.ERROR)
         return handler.status
 
 register('checker', LdiUploadChecker)
