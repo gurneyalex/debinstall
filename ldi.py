@@ -29,7 +29,10 @@ from debinstall.__pkginfo__ import version
 from debinstall import debrepo
 from debinstall.debfiles import BadSignature, Changes
 
-RCFILE = '/home/syt/etc/debinstallrc'
+if osp.exists('/etc/debinstallrc'):
+    RCFILE = '/etc/debinstallrc'
+else:
+    RCFILE = osp.expanduser('~/etc/debinstallrc')
 
 LDI = cli.CommandLine('ldi', doc='Logilab debian installer', version=version,
                       rcfile=RCFILE)
