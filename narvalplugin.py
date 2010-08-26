@@ -73,17 +73,20 @@ class LdiUploadChecker(BaseChecker):
 
     id = 'ldi.upload'
     command = 'upload'
-    options_def = [
-        {'name': 'repository', 'required': True,
-         'help': 'ldi repository name',
-        },
-        {'name': 'changes-file', 'required': True,
-         'help': 'changes file to upload/publish',
-        },
-        {'name': 'rc-file',
-         'help': 'debinstall configuration file.',
-        },
-    ]
+    options_def = {
+        'repository': {
+            'required': True,
+            'help': 'ldi repository name',
+            },
+        'changes-file': {
+            'type', 'csv', 'required': True,
+            'help': 'changes file to upload/publish',
+            },
+        'rc-file': {
+            'default': LDI.rcfile,
+            'help': 'debinstall configuration file.',
+            },
+        }
 
     def version_info(self):
         self.record_version_info('ldi', LDI.version)
