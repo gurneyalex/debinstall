@@ -123,7 +123,7 @@ class Upload(cli.Command):
 
     def run(self, args):
         repodir = _repo_path(self.config, args.pop(0))
-        sectiondir = self._check_repository(repodir, 'incoming')
+        repo = self._check_repository(repodir)
         self.debian_changes = {}
         for filename in args:
             changes = self._check_changes_file(filename)
@@ -132,7 +132,7 @@ class Upload(cli.Command):
             else:
                 distrib = changes['Distribution']
             try:
-                distribdir = self._check_distrib(sectiondir, distrib)
+                distribdir = repo.check_distrib('incoming', distrib)
             except cli.CommandError, ex:
                 self.logger.error(ex)
                 # drop the current changes file
@@ -145,26 +145,16 @@ class Upload(cli.Command):
                 move = sht.cp
             self.perform_changes_file(changes, distribdir, move)
 
-    def _check_repository(self, repodir, section):
-        subdir = osp.join(repodir, section)
-        if not osp.isdir(osp.join(repodir, 'incoming')):
-            raise cli.CommandError(
-                "Repository %s doesn't exist or isn't properly initialized (no "
-                "'%s' directory)" % (repodir, section))
-        return subdir
-
-    def _check_distrib(self, sectiondir, distrib):
-        distribdir = osp.join(sectiondir, distrib)
-        if not osp.isdir(distribdir):
-            raise cli.CommandError(
-                "Distribution %s not found in %s" % (distrib, sectiondir))
-        # Print a warning in case of using symbolic distribution names
-        distribdir = osp.realpath(distribdir)
-        dereferenced = osp.basename(distribdir)
-        if dereferenced != distrib:
-            self.logger.warn("deferences symlinked distribution '%s' to '%s'",
-                             distrib, dereferenced)
-        return distribdir
+    def _check_repository(self, repodir):
+        if not osp.isdir(repodir):
+            raise cli.CommandError("Repository %s doesn't exist")
+        for section in ('dists', 'incoming'):
+            subdir = osp.join(repodir, section)
+            if not osp.isdir(subdir):
+                raise cli.CommandError(
+                    "Repository %s isn't properly initialized (no %r directory)"
+                    % (repodir, section))
+        return debrepo.DebianRepository(self.logger, repodir)
 
     def _check_changes_file(self, changes_file):
         """basic tests to determine debian changes file"""
@@ -282,47 +272,44 @@ class Publish(Upload):
 
     def run(self, args):
         repodir = _repo_path(self.config, args.pop(0))
-        incdir = self._check_repository(repodir, 'incoming')
-        distsdir = self._check_repository(repodir, 'dists')
+        repo = self._check_repository(repodir)
         distribs = set()
         # we have to launch the publication sequentially
         lockfile = osp.join(repodir, 'ldi.lock')
         sht.acquire_lock(lockfile, max_try=3, delay=5)
         self.debian_changes = {}
         try:
-            changes_files = self._find_changes_files(incdir, args)
+            changes_files = self._find_changes_files(repo.incoming_directory, args)
             if not changes_files and not self.config.refresh:
-                self.logger.error("no changes file to publish in %s", incdir)
+                self.logger.error("no changes file to publish in %s",
+                                  repo.incoming_directory)
             for filename in changes_files:
                 # distribution name is the same as the incoming directory name
                 # it lets override a valid suite by a more private one (for
                 # example: contrib, volatile, experimental, ...)
                 distrib = osp.basename(osp.dirname(filename))
-                destdir = self._check_distrib(distsdir, distrib)
+                destdir = repo.check_distrib('dists', distrib)
                 changes = self._check_changes_file(filename)
                 self._check_signature(changes)
                 self._run_checkers(changes)
                 self.perform_changes_file(changes, destdir, sht.mv)
                 # mark distribution to be refreshed at the end
                 distribs.add(distrib)
-            aptconffile = debrepo.generate_aptconf(repodir)
+            repo.generate_aptconf(repodir)
             if self.config.refresh:
                 distribs = ('*',)
             for distrib in distribs:
-                self._apt_refresh(distsdir, aptconffile, distrib)
+                self._apt_refresh(repo, distrib)
         finally:
             sht.release_lock(lockfile)
 
-    def _apt_refresh(self, distsdir, aptconffile, distrib="*"):
-        for distdir in glob(osp.join(distsdir, distrib)):
+    def _apt_refresh(self, repo, distrib="*"):
+        for distdir in glob(osp.join(repo.dists_directory, distrib)):
             if osp.isdir(distdir) and not osp.islink(distdir):
-                debrepo.clean(distdir)
-                debrepo.generate(distdir, aptconffile)
-                debrepo.release(distdir, aptconffile)
+                repo.dist_publish(osp.basename(distdir))
                 if self.config.gpg_keyid:
                     self.logger.info('signing release')
-                    debrepo.sign(distdir, self.config.gpg_keyid)
-                self.logger.info('%s: index files generated', distdir)
+                    repo.sign(distdir, self.config.gpg_keyid)
 
     def _find_changes_files(self, path, args, distrib=None):
         changes = []
