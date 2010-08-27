@@ -49,7 +49,7 @@ def act_ldi_publish(inputs):
                                                 'debian.changes.published'),
             'repository': FilePath(
                 path=repo, type='debian.repository',
-                published_dists=getattr(checker, 'debian_changes', ())
+                published_dists=getattr(checker, 'debian_changes', ()))
             }
 
 
@@ -80,7 +80,7 @@ class LdiUploadChecker(BaseChecker):
             'help': 'ldi repository name',
             },
         'changes-files': {
-            'type', 'csv', 'required': True,
+            'type': 'csv', 'required': True,
             'help': 'changes file to upload/publish',
             },
         'rc-file': {
@@ -96,7 +96,7 @@ class LdiUploadChecker(BaseChecker):
         self.debian_changes = getattr(cmd, 'debian_changes', {})
         for changes in self.debian_changes.itervalues():
             for change in changes:
-                self.writer.raw(dist, self.command, type=u'debian.repository')
+                self.writer.raw(change, self.command, type=u'debian.changes')
 
     def do_check(self, test):
         """run the checker against <path> (usually a directory)
