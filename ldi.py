@@ -124,6 +124,7 @@ class Upload(cli.Command):
     def run(self, args):
         repodir = _repo_path(self.config, args.pop(0))
         sectiondir = self._check_repository(repodir, 'incoming')
+        self.debian_changes = {}
         for filename in args:
             changes = self._check_changes_file(filename)
             if self.config.distribution:
@@ -251,6 +252,9 @@ class Upload(cli.Command):
             for filename in tokeep:
                 self.logger.debug("rm %s %s", filename)
                 sht.rm(filename)
+        distrib = osp.basename(distribdir)
+        changeslist = self.debian_changes.setdefault(distrib, [])
+        changeslist.append(osp.join(distribdir, changes.filename))
 
 LDI.register(Upload)
 
@@ -284,6 +288,7 @@ class Publish(Upload):
         # we have to launch the publication sequentially
         lockfile = osp.join(repodir, 'ldi.lock')
         sht.acquire_lock(lockfile, max_try=3, delay=5)
+        self.debian_changes = {}
         try:
             changes_files = self._find_changes_files(incdir, args)
             if not changes_files and not self.config.refresh:

@@ -25,7 +25,7 @@ def setup_module(*args):
     data_dir = osp.join(TESTDIR, 'data')
     if not osp.isdir(data_dir):
         os.mkdir(data_dir)
-    status = run_command('create', '-d', 'testing,stable,unstable', REPODIR)
+    status = run_command('create', '-d', 'testing,stable,unstable', REPODIR)[-1]
     assert status == 0
 
 def teardown_module(*args):
@@ -34,7 +34,7 @@ def teardown_module(*args):
 
 def run_command(cmd, *commandargs):
     cmd = LDI.get_command(cmd, logger=LDI.create_logger(HANDLER))
-    return cmd.main_run(list(commandargs), rcfile=None)
+    return cmd, cmd.main_run(list(commandargs), rcfile=None)
 
 def _tearDown(self):
     for f in glob(osp.join(REPODIR, '*', '*', '*')):
@@ -61,7 +61,7 @@ class LdiUploadTC(TestCase):
 
     def test_upload_normal_changes(self):
         changesfile = osp.join(TESTDIR, 'packages', 'signed_package', 'package1_1.0-1_i386.changes')
-        status = run_command('upload', REPODIR, changesfile)
+        cmd, status = run_command('upload', REPODIR, changesfile)
         self.assertEqual(status, 0)
         incoming = osp.join(REPODIR, 'incoming', 'unstable')
         uploaded = os.listdir(incoming)
@@ -72,11 +72,14 @@ class LdiUploadTC(TestCase):
                     'package1_1.0.orig.tar.gz',
                     ]
         self.assertUnorderedIterableEquals(uploaded, expected)
+        self.assertEquals(cmd.debian_changes,
+                          {'unstable': [osp.join(REPODIR, 'incoming/unstable/package1_1.0-1_i386.changes')]})
 
     def test_upload_unsigned_changes(self):
         changesfile = osp.join(TESTDIR, 'packages', 'unsigned_package', 'package1_1.0-1_i386.changes')
-        status = run_command('upload', REPODIR, changesfile)
+        cmd, status = run_command('upload', REPODIR, changesfile)
         self.assertEqual(status, 2)
+        self.assertEquals(cmd.debian_changes, {})
 
 
 class LdiPublishTC(TestCase):
@@ -86,8 +89,10 @@ class LdiPublishTC(TestCase):
     tearDown = _tearDown
 
     def test_publish_normal(self):
-        status = run_command('publish', REPODIR)
+        cmd, status = run_command('publish', REPODIR)
         self.assertEqual(status, 0)
+        self.assertEquals(cmd.debian_changes,
+                          {'unstable': [osp.join(REPODIR, 'dists/unstable/package1_1.0-1_i386.changes')]})
         expected_generated = set(['Release', 'Packages', 'Packages.gz', 'Packages.bz2',
                               'Sources', 'Sources.gz', 'Sources.bz2',
                               'Contents', 'Contents.gz', 'Contents.bz2', ])
