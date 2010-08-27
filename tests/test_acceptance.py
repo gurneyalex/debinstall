@@ -2,29 +2,16 @@ import sys
 import os, os.path as osp
 import shutil
 import logging
+from glob import glob
 
 from logilab.common.testlib import TestCase, unittest_main
 from logilab.common.shellutils import Execute
 
-from debinstall import ldi
+from debinstall.ldi import LDI
 
 TESTDIR = osp.abspath(osp.dirname(__file__))
 REPODIR = osp.join(TESTDIR, 'data', 'my_repo')
 DEBUG = False
-
-def setup_module(args):
-    data_dir = osp.join(TESTDIR, 'data')
-    if not osp.isdir(data_dir):
-        os.mkdir(data_dir)
-
-def run_command(cmd, *commandargs):
-    return ldi.LDI.run_command(cmd, list(commandargs))
-
-def _tearDown(self):
-    if osp.exists(REPODIR):
-        shutil.rmtree(REPODIR)
-
-
 
 class LdiLogHandler(logging.Handler):
     def __init__(self, *args, **kwargs):
@@ -32,33 +19,44 @@ class LdiLogHandler(logging.Handler):
         self.msgs = {}
     def emit(self, record):
         self.msgs.setdefault(record.levelname, []).append(record.getMessage())
+HANDLER = LdiLogHandler()
 
-ldi.LDI.init_log(handler=LdiLogHandler())
-ldi.rcfile = None
+def setup_module(*args):
+    data_dir = osp.join(TESTDIR, 'data')
+    if not osp.isdir(data_dir):
+        os.mkdir(data_dir)
+    status = run_command('create', '-d', 'testing,stable,unstable', REPODIR)
+    assert status == 0
+
+def teardown_module(*args):
+    if osp.exists(REPODIR):
+        shutil.rmtree(REPODIR)
+
+def run_command(cmd, *commandargs):
+    cmd = LDI.get_command(cmd, logger=LDI.create_logger(HANDLER))
+    return cmd.main_run(list(commandargs), rcfile=None)
+
+def _tearDown(self):
+    for f in glob(osp.join(REPODIR, '*', '*', '*')):
+        os.unlink(f)
 
 
 class LdiCreateTC(TestCase):
     tearDown = _tearDown
 
+    def assertDirectoryExists(self, dir):
+        self.failUnless(osp.isdir(dir), '%s not created' % dir)
+
     def test_normal_creation(self):
-        command = ['ldi', 'create', '-d', 'testing,stable', REPODIR]
-        status = run_command('create', '-d', 'testing,stable', REPODIR)
-        self.assertEquals(status, 0)
-        self.failUnless(osp.isdir(REPODIR), 'repo dir %s not created' % REPODIR)
-        for sub in ('dists', 'incoming'):
+        self.assertDirectoryExists(REPODIR)
+        for sub in ('dists', 'incoming', 'archive'):
             dists = osp.join(REPODIR, sub)
-            self.failUnless(osp.isdir(dists), '%s dir not created' % sub)
-            for dist in ['testing', 'stable']:
-                directory = osp.join(dists, dist)
-                self.failUnless(osp.isdir(directory),
-                                '%s/%s dir not created' % (sub, dist))
-        #aptconf = osp.join(repodir, 'apt.conf')
-        #self.failUnless(osp.isfile(aptconf), '%s file not created' % aptconf)
+            self.assertDirectoryExists(dists)
+            for dist in ['testing', 'stable', 'unstable']:
+                self.assertDirectoryExists(osp.join(dists, dist))
 
 
 class LdiUploadTC(TestCase):
-    def setUp(self):
-        run_command('create', '-d', 'unstable', REPODIR)
     tearDown = _tearDown
 
     def test_upload_normal_changes(self):
@@ -83,7 +81,6 @@ class LdiUploadTC(TestCase):
 
 class LdiPublishTC(TestCase):
     def setUp(self):
-        run_command('create', '-d', 'unstable', REPODIR)
         changesfile = osp.join(TESTDIR, 'packages', 'signed_package', 'package1_1.0-1_i386.changes')
         run_command('upload', REPODIR, changesfile)
     tearDown = _tearDown
