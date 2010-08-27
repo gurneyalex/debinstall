@@ -464,8 +464,8 @@ class Diff(Upload):
                 repo1[package][dist][archi] = [v for v in repo1[package][dist][archi]
                                                if v > version]
             except KeyError:
-                self.warning('no package for %s %s %s in %s',
-                             dist, archi, package, repo.ldiname)
+                self.logger.warning('no package for %s %s %s in %s',
+                                    dist, archi, package, repo.ldiname)
         if repo1:
             print '-'*80
             print 'packages in %s which are not in %s:' % (repo.ldiname, trepo.ldiname)
@@ -516,8 +516,7 @@ class Reduce(Upload):
         repo = self._check_repository(_repo_path(self.config, args.pop(0)))
         idx = repo.packages_index(self.config.package)
         for package in sorted(idx):
-            missing = {}
-            for dist, distinfo in repo1[package].iteritems():
+            for dist, distinfo in idx[package].iteritems():
                 for archi, versions in distinfo.iteritems():
                     try:
                         repo.reduce_package(dist, package, versions, archi)
