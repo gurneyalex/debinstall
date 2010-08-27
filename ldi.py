@@ -43,11 +43,6 @@ OPTIONS = [
       'help': 'comma separated list of distributions supported by the repository',
       'default': ['lenny', 'squeeze', 'sid'],
       }),
-    ('checkers',
-     {'type': 'csv', 'short': 'C', 'group': 'main',
-      'help': 'comma separated list of checkers to run before package upload/publish',
-      'default': ['lintian'],
-      }),
     ('repositories-directory',
      {'type': 'string', 'short': 'R', 'group': 'main',
       'help': 'directory where repositories are stored',
@@ -56,6 +51,11 @@ OPTIONS = [
      {'type': 'string', 'short': 'G', 'group': 'main',
       'help': 'Unix group to which ldi handled files/directories should belong',
       'default': None, #'debinstall',
+      }),
+    ('checkers',
+     {'type': 'csv', 'short': 'C', 'group': 'main',
+      'help': 'comma separated list of checkers to run before package upload/publish',
+      'default': ['lintian'],
       }),
     ]
 
@@ -122,8 +122,7 @@ class Upload(cli.Command):
         ]
 
     def run(self, args):
-        repodir = _repo_path(self.config, args.pop(0))
-        repo = self._check_repository(repodir)
+        repo = self._check_repository(_repo_path(self.config, args.pop(0)))
         self.debian_changes = {}
         for filename in args:
             changes = self._check_changes_file(filename)
@@ -271,11 +270,10 @@ class Publish(Upload):
         ]
 
     def run(self, args):
-        repodir = _repo_path(self.config, args.pop(0))
-        repo = self._check_repository(repodir)
+        repo = self._check_repository(_repo_path(self.config, args.pop(0)))
         distribs = set()
         # we have to launch the publication sequentially
-        lockfile = osp.join(repodir, 'ldi.lock')
+        lockfile = osp.join(repo.directory, 'ldi.lock')
         sht.acquire_lock(lockfile, max_try=3, delay=5)
         self.debian_changes = {}
         try:
@@ -295,7 +293,7 @@ class Publish(Upload):
                 self.perform_changes_file(changes, destdir, sht.mv)
                 # mark distribution to be refreshed at the end
                 distribs.add(distrib)
-            repo.generate_aptconf(repodir)
+            repo.generate_aptconf()
             if self.config.refresh:
                 distribs = ('*',)
             for distrib in distribs:
@@ -454,6 +452,128 @@ LDI.register(Publish)
 #         orphaned_files -= set(fnmatch.filter(orphaned_files, "*/Contents*"))
 #         orphaned_files -= set(fnmatch.filter(orphaned_files, "*/Release*"))
 #         return orphaned_files
+
+
+class Diff(Upload):
+    """Show diffs between files published in a repository and not in another,
+    proposing to upload them.
+
+    Useful to handle a stable version of a repository by selecting which
+    packages are considered as stable. If you upload some package, you should
+    then run 'ldi publish' on the target repository
+    """
+    name = "diff"
+    min_args = max_args = 2
+    arguments = "<repository> <target repository>"
+    options = OPTIONS[:2] + [
+        ]
+
+    def run(self, args):
+        repo = self._check_repository(_repo_path(self.config, args.pop(0)))
+        trepo = self._check_repository(_repo_path(self.config, args.pop(0)))
+        self.logger.debug('**** analyzing repo %s', repo.ldiname)
+        repo1 = repo.packages_index(dists=self.config.distributions)
+        self.logger.debug('**** analyzing repo %s', trepo.ldiname)
+        repo2 = {}
+        for dist, archi, package, version in trepo.iter_changes_files(dists=self.config.distributions):
+            repo2[package] = max(repo2.get(package), version)
+            try:
+                repo1[package][dist][archi] = [v for v in repo1[package][dist][archi]
+                                               if v > version]
+            except KeyError:
+                self.warning('no package for %s %s %s in %s',
+                             dist, archi, package, repo.ldiname)
+        if repo1:
+            print '-'*80
+            print 'packages in %s which are not in %s:' % (repo.ldiname, trepo.ldiname)
+            for package in sorted(repo1):
+                missing = {}
+                for dist, distinfo in repo1[package].iteritems():
+                    for archi, versions in distinfo.iteritems():
+                        for version in versions:
+                            missing.setdefault(version, []).append('%s-%s' % (dist, archi))
+                if missing:
+                    repo2version = repo2.get(package, 'no version released')
+                    print '* %s (%s)' % (package, repo2version)
+                    lastversion = None
+                    for version in reversed(sorted(missing)):
+                        if lastversion is not None and debrepo.major_version(version) == lastversion:
+                            continue
+                        print '  - %s (%s)' % (version, ', '.join(missing[version])),
+                        lastversion = debrepo.major_version(version)
+                        if repo2version == version:
+                            print 'MISSING DIST / ARCH'
+                        else:
+                            print 'UNRELEASED'
+                        if sht.ASK.confirm('upload to %s?' % trepo.ldiname):
+                            for distarch in missing[version]:
+                                dist, arch = distarch.split('-')
+                                changes = osp.join(repo.directory, dist,
+                                                   debrepo.changesfile(package, version, arch))
+                                os.system('ldi upload %s %s' % (trepo.directory, changes))
+
+
+class Reduce(Upload):
+    """Reduce packages published in a repository.
+
+    When a package has version X.Y.Z publish, automatically delete all versions
+    between X.Y.0 and X.Y.MAX(Z).
+    """
+    name = "reduce"
+    min_args = max_args = 1
+    arguments = "<repository>"
+    options = [OPTIONS[1]] + [
+        ('package',
+         {'type': 'string', 'short': 'p',
+          'help': 'package to reduce',
+          }),
+        ]
+
+    def run(self, args):
+        repo = self._check_repository(_repo_path(self.config, args.pop(0)))
+        idx = repo.packages_index(self.config.package)
+        for package in sorted(idx):
+            missing = {}
+            for dist, distinfo in repo1[package].iteritems():
+                for archi, versions in distinfo.iteritems():
+                    try:
+                        repo.reduce_package(dist, package, versions, archi)
+                    except:
+                        self.logger.exception('error while processing %s %s %s',
+                                              dist, package, archi)
+
+
+class Archive(Upload):
+    """Archive some versions of a package published in a repository."""
+    name = "reduce"
+    min_args = max_args = 2
+    arguments = "<repository> <source package> <up to version>"
+    options = [OPTIONS[1]] + [
+        ('down-to-version',
+         {'type': 'string', 'short': 'u',
+          'help': 'don\'t remove package with version prior to given value',
+          }),
+        ]
+
+    def run(self, args):
+        repo = debrepo.DebianRepository(_repo_path(self.config, args.pop(0)))
+        sourcepackage = args.pop(0)
+        baseversion = debrepo.Version(args.pop(0))
+        if self.config.down_to_version is None:
+            downtoversion = None
+        else:
+            downtoversion = debrepo.Version(self.config.down_to_version)
+        isdebianversion = '-' in baseversion
+        for dist, archi, package, version in repo.iter_changes_files(package=sourcepackage):
+            upstreamversion = debrepo.split_version(version)[0]
+            if isdebianversion:
+                if version > baseversion:
+                    continue
+            elif upstreamversion > baseversion:
+                continue
+            if downtoversion is not None and upstreamversion < downtoversion:
+                continue
+            repo.archive_package(dist, package, version, archi)
 
 
 if __name__ == '__main__':

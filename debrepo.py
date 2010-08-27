@@ -19,10 +19,31 @@ import os
 import os.path as osp
 import subprocess
 import logging
+import sys
+import shutil
 from glob import glob
 
+from logilab.common.decorators import cached
 from logilab.common.clcommands import CommandError
 from logilab.common.shellutils import ASK
+
+from logilab.devtools.lib.changelog import Version
+
+from debinstall.debfiles import Changes
+
+Version.__hash__ = lambda x: x.value.__hash__()
+#Version.__cmp__ = lambda x,o: (x < o and -1) or (x > o and 1) or 0
+
+def split_version(version):
+    upstreamversion, debversion = version.value.split('-', 1)
+    return Version(upstreamversion), int(debversion)
+
+def major_version(version):
+    return [int(num) for num in version.value.split('-', 1)[0].split('.')[:2]]
+
+def changesfile(package, version, archi):
+    return '%s_%s_%s.changes' % (package, version, archi)
+
 
 APTDEFAULT_APTCONF = '''// Generated file, do not modify !!
 
@@ -63,14 +84,22 @@ class DebianRepository(object):
         self.directory = directory
 
     @property
+    def ldiname(self):
+        return osp.dirname(self.directory)
+
+    @property
+    def aptconf_file(self):
+        return osp.join(self.directory, 'apt.conf')
+
+    @property
     def incoming_directory(self):
         return osp.join(self.directory, 'incoming')
     @property
     def dists_directory(self):
         return osp.join(self.directory, 'dists')
     @property
-    def aptconf_file(self):
-        return osp.join(self.directory, 'apt.conf')
+    def archive_directory(self):
+        return osp.join(self.directory, 'archive')
 
     def check_distrib(self, section, distrib):
         distribdir = osp.join(self.directory, section, distrib)
@@ -133,7 +162,6 @@ class DebianRepository(object):
             raise CommandError('apt-ftparchive exited with error status %d'
                                % pipe.returncode)
 
-
     def sign(self, dist, gpgkeyid):
         releasepath = osp.join(self.dists_directory, dist, 'Release')
         signed_releasepath = releasepath + '.gpg'
@@ -145,3 +173,71 @@ class DebianRepository(object):
         status = pipe.wait()
         if status != 0:
             raise CommandError('gpg exited with status %d' % status)
+
+    def iter_changes_files(self, package=None, dists=None):
+        if package is None:
+            matchstring = '*.changes'
+        else:
+            matchstring = '%s_*.changes' % package
+        for dist in os.listdir(self.dists_directory):
+            if dists and not dist in dists:
+                self.logger.debug('skip distrib %s', dist)
+                continue
+            for changes in glob(osp.join(self.dists_directory, dist, matchstring)):
+                package, version, archi = changes.split('_')
+                try:
+                    yield (dist, archi.replace('.changes', ''),
+                           osp.basename(package), Version(version))
+                except ValueError:
+                    self.logger.warning('skip misnamed package %s', changes)
+
+    @cached
+    def packages_index(self, package=None, dists=None):
+        repo1 = {}
+        for dist, archi, package, version in self.iter_changes_files(package, dists):
+            repo1.setdefault(package, {}).setdefault(dist, {}).setdefault(archi, set()).add(version)
+        return repo1
+
+    def archive_package(self, dist, package, version, archi):
+        self.logger.info('archive %s %s %s %s', dist, package, version, archi)
+        distdir = osp.join(self.dists_directory, dist)
+        archivedir = osp.join(self.archive_directory, dist)
+        changes = osp.join(distdir, changesfile(package, version, archi))
+        for bpackage in Changes(changes).get_packages():
+            for fpath in glob(osp.join(distdir, '%s_%s_%s*' % (bpackage, version, archi))):
+                self.logger.debug('move %s', fpath)
+                shutil.move(fpath, osp.join(archivedir, osp.basename(fpath)))
+            for fpath in glob(osp.join(distdir, '%s_%s_all*' % (bpackage, version))):
+                self.logger.debug('move %s', fpath)
+                shutil.move(fpath, osp.join(archivedir, osp.basename(fpath)))
+        if glob(osp.join(distdir, changesfile(package, version, '*'))):
+            # .dsc, .diff.gz, .orig.tar.gz should be kept for some other
+            # architecture
+            move = shutil.copy
+        else:
+            move = shutil.move
+        for fpath in (osp.join(distdir, '%s_%s.dsc' % (package, version)),
+                      osp.join(distdir, '%s_%s.diff.gz' % (package, version))):
+            if osp.exists(fpath):
+                self.logger.debug('%s %s', move.__name__, fpath)
+                move(fpath, osp.join(archivedir, osp.basename(fpath)))
+        upstreamversion, debversion = split_version(version)
+        if debversion != 1:
+            # don't remove .orig.tar.gz for debian version != 1
+            move = shutil.copy
+        fpath  = osp.join(distdir, '%s_%s.orig.tar.gz' % (package, upstreamversion))
+        if osp.exists(fpath):
+            self.logger.debug('%s %s', move.__name__, fpath)
+            move(fpath, osp.join(archivedir, osp.basename(fpath)))
+
+    def reduce_package(self, dist, package, versions, archi):
+        versions = sorted(versions)
+        lastversion = major_version(versions.pop())
+        for version in reversed(versions):
+            majorversion = major_version(version)
+            if lastversion == majorversion:
+                self.archive_package(dist, package, version, archi)
+            else:
+                self.logger.info('%s %s %s %s', dist, archi, lastversion,
+                                 majorversion)
+                lastversion = majorversion
