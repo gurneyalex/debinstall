@@ -19,7 +19,8 @@ def _ldi_checker(checker, inputs):
     return test.run_checker(checker, options)
 
 
-@input('changes-file', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes"',
+
+@input('changes-files', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes"',
        use=True, list=True)
 @output('changes-file', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes.uploaded"',
         list=True)
@@ -35,7 +36,7 @@ def act_ldi_upload(inputs):
     return {'changes-file': result}
 
 
-@input('changes-file', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes"',
+@input('changes-files', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes"',
        use=True, list=True)
 @output('changes-file', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes.uploaded"',
         list=True)
@@ -77,7 +78,7 @@ class LdiUploadChecker(BaseChecker):
             'required': True,
             'help': 'ldi repository name',
             },
-        'changes-file': {
+        'changes-files': {
             'type', 'csv', 'required': True,
             'help': 'changes file to upload/publish',
             },
@@ -90,6 +91,12 @@ class LdiUploadChecker(BaseChecker):
     def version_info(self):
         self.record_version_info('ldi', LDI.version)
 
+    def _get_back_infos(self, cmd):
+        self.debian_changes = getattr(cmd, 'debian_changes', {})
+        for changes in self.debian_changes.itervalues():
+            for change in changes:
+                self.writer.raw(dist, self.command, type=u'debian.repository')
+
     def do_check(self, test):
         """run the checker against <path> (usually a directory)
 
@@ -100,13 +107,12 @@ class LdiUploadChecker(BaseChecker):
         repository = self.options.get('repository')
         debinstallrc = self.options.get('rc-file')
         self.processed = {}
-        LDI.init_log(handler=LdiLogHandler(self.writer))
-        changesfiles = [f.path for f in self.options.get('changes-file')]
-        LDI.run_command(self.command, [repository] + changesfiles, debinstallrc)
-        if logger.status == utils.SUCCESS:
-            self.processed['changesfiles'] = changesfile
-        self.processed['repository'] = repository
-        return logger.status
+        changesfiles = [f.path for f in self.options.get('changes-files')]
+        handler = LdiLogHandler(self.writer)
+        cmd = LDI.get_command(self.command, logger=LDI.create_logger(handler))
+        cmd.main_run([repository] + changesfiles, rcfile=debinstallrc)
+        self._get_back_infos(cmd)
+        return handler.status
 
 register('checker', LdiUploadChecker)
 
@@ -116,5 +122,10 @@ class LdiPublishChecker(LdiUploadChecker):
 
     id = 'ldi.publish'
     command = 'publish'
+
+    def _get_back_infos(self, cmd):
+        super(LdiPublishChecker, self)._get_back_infos(cmd)
+        for dist in self.debian_changes:
+            self.writer.raw(dist, 'published', type=u'debian.repository')
 
 register('checker', LdiPublishChecker)
