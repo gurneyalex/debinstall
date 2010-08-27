@@ -65,7 +65,7 @@ class LdiLogHandler(logging.Handler):
     def emit(self, record):
         emitfunc = getattr(self.writer, record.levelname.lower())
         emitfunc(record.getMessage(), path=self.path)
-        if record.level == 'ERROR':
+        if record.level >= logging.ERROR:
             self.status = utils.FAILURE
 
 
