@@ -328,15 +328,17 @@ class Publish(Upload):
         changes = []
         if distrib:
             distrib = osp.basename(osp.realpath(osp.join(path, distrib)))
+        if args:
+            file_match = lambda f: f in args or osp.join(root, f) in args
+        else:
+            file_match = lambda f: f.endswith('.changes')
         for root, dirs, files in os.walk(path):
             for d in dirs[:]:
                 if osp.islink(osp.join(root, d)):
                     dirs.remove(d)
                 elif distrib and d != distrib:
                     dirs.remove(d)
-            for f in files:
-                if f.endswith('.changes') and (not args or f in args):
-                    changes.append(osp.join(root, f))
+            changes += [osp.join(root, f) for f in files if file_match(f)]
         return sorted(changes)
 
 LDI.register(Publish)
