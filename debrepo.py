@@ -174,6 +174,23 @@ class DebianRepository(object):
         if status != 0:
             raise CommandError('gpg exited with status %d' % status)
 
+    def incoming_changes_files(self, args, distrib=None):
+        changes = []
+        if distrib:
+            distrib = osp.basename(osp.realpath(osp.join(self.incoming_directory, distrib)))
+        if args:
+            file_match = lambda f: f in args or osp.join(root, f) in args
+        else:
+            file_match = lambda f: f.endswith('.changes')
+        for root, dirs, files in os.walk(self.incoming_directory):
+            for d in dirs[:]:
+                if osp.islink(osp.join(root, d)):
+                    dirs.remove(d)
+                elif distrib and d != distrib:
+                    dirs.remove(d)
+            changes += [osp.join(root, f) for f in files if file_match(f)]
+        return sorted(changes)
+
     def iter_changes_files(self, package=None, dists=None):
         if package is None:
             matchstring = '*.changes'
