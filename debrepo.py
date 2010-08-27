@@ -18,14 +18,11 @@
 import os
 import os.path as osp
 import subprocess
-import logging
-import sys
 import shutil
 from glob import glob
 
 from logilab.common.decorators import cached
 from logilab.common.clcommands import CommandError
-from logilab.common.shellutils import ASK
 
 from logilab.devtools.lib.changelog import Version
 
