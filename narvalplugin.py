@@ -18,38 +18,39 @@ def _ldi_checker(checker, inputs):
     options['changes-file'] = inputs['changes-file']
     return test.run_checker(checker, options)
 
+def _get_changes_files(checker, repository, type):
+    result = []
+    for distrib, changesfiles in getattr(checker, 'debian_changes', {}).iteritems():
+        for changesfile in changesfiles:
+            result.append(FilePath(path=changesfile, type=type))
 
 
 @input('changes-files', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes"',
        use=True, list=True)
-@output('changes-file', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes.uploaded"',
+@output('changes-files', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes.uploaded"',
         list=True)
 @utils.apycotaction('ldi.upload')
 def act_ldi_upload(inputs):
     checker, status = _ldi_checker('ldi.upload', inputs)
-    result = []
-    for changesfile in checker.processed.get('changesfiles'):
-        path = osp.join(inputs['options'].repository, 'incoming',
-                        inputs['changes-file'].distribution,
-                        osp.basename(changesfile))
-        result.append(FilePath(path=path, type='debian.changes.uploaded'))
-    return {'changes-file': result}
+    return {'changes-files': _get_changes_files(checker, inputs['options'].repository,
+                                                'debian.changes.uploaded')}
 
 
 @input('changes-files', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes"',
        use=True, list=True)
-@output('changes-file', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes.uploaded"',
+@output('changes-files', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes.uploaded"',
         list=True)
+@output('repository', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.repository"')
 @utils.apycotaction('ldi.publish')
 def act_ldi_publish(inputs):
     checker, status = _ldi_checker('ldi.publish', inputs)
-    result = []
-    for changesfile in checker.processed.get('changesfiles', ()):
-        path = osp.join(inputs['options'].repository, 'incoming',
-                        inputs['changes-file'].distribution,
-                        osp.basename(changesfile))
-        result.append(FilePath(path=path, type='debian.changes.published'))
-    return {'changes-file': result}
+    repo = inputs['options'].repository
+    return {'changes-files': _get_changes_files(checker, repo,
+                                                'debian.changes.published'),
+            'repository': FilePath(
+                path=repo, type='debian.repository',
+                published_dists=getattr(checker, 'debian_changes', ())
+            }
 
 
 # apycot checkers ##############################################################
