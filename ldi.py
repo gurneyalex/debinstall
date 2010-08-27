@@ -277,7 +277,7 @@ class Publish(Upload):
         sht.acquire_lock(lockfile, max_try=3, delay=5)
         self.debian_changes = {}
         try:
-            changes_files = self._find_changes_files(repo.incoming_directory, args)
+            changes_files = repo.incoming_changes_files(args)
             if not changes_files and not self.config.refresh:
                 self.logger.error("no changes file to publish in %s",
                                   repo.incoming_directory)
@@ -308,23 +308,6 @@ class Publish(Upload):
                 if self.config.gpg_keyid:
                     self.logger.info('signing release')
                     repo.sign(distdir, self.config.gpg_keyid)
-
-    def _find_changes_files(self, path, args, distrib=None):
-        changes = []
-        if distrib:
-            distrib = osp.basename(osp.realpath(osp.join(path, distrib)))
-        if args:
-            file_match = lambda f: f in args or osp.join(root, f) in args
-        else:
-            file_match = lambda f: f.endswith('.changes')
-        for root, dirs, files in os.walk(path):
-            for d in dirs[:]:
-                if osp.islink(osp.join(root, d)):
-                    dirs.remove(d)
-                elif distrib and d != distrib:
-                    dirs.remove(d)
-            changes += [osp.join(root, f) for f in files if file_match(f)]
-        return sorted(changes)
 
 LDI.register(Publish)
 
