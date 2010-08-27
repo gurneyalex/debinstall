@@ -65,6 +65,15 @@ class Changes(object):
                 return path
         return None
 
+    def get_packages(self):
+        packages = set()
+        if self['Source']:
+            packages.add(self['Source'])
+        for binpkg in self['Binary']:
+            assert packages # assert source package has been found
+            packages.add(binpkg)
+        return packages
+
     @cached
     def get_all_files(self, check_if_exists=True):
         all_files = set((self.path,))
