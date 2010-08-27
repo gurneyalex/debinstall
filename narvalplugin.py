@@ -4,8 +4,8 @@ import logging
 from narvalbot.prototype import input, output
 from narvalbot.elements import FilePath
 
-from apycotbot import utils, register
-from apycotbot.checkers import BaseChecker
+import apycotlib as apycot
+from apycotlib.checkers import BaseChecker
 
 from debinstall.ldi import LDI
 
@@ -29,7 +29,7 @@ def _get_changes_files(checker, repository, type):
        use=True, list=True)
 @output('changes-files', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes.uploaded"',
         list=True)
-@utils.apycotaction('ldi.upload')
+@apycot.apycotaction('ldi.upload')
 def act_ldi_upload(inputs):
     checker, status = _ldi_checker('ldi.upload', inputs)
     return {'changes-files': _get_changes_files(checker, inputs['options']['debian.repository'],
@@ -41,7 +41,7 @@ def act_ldi_upload(inputs):
 @output('changes-files', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes.uploaded"',
         list=True)
 @output('repository', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.repository"')
-@utils.apycotaction('ldi.publish')
+@apycot.apycotaction('ldi.publish')
 def act_ldi_publish(inputs):
     checker, status = _ldi_checker('ldi.publish', inputs)
     repo = inputs['options']['debian.repository']
@@ -60,13 +60,13 @@ class LdiLogHandler(logging.Handler):
         logging.Handler.__init__(self)
         self.writer = writer
         self.path = None
-        self.status = utils.SUCCESS
+        self.status = apycot.SUCCESS
 
     def emit(self, record):
         emitfunc = getattr(self.writer, record.levelname.lower())
         emitfunc(record.getMessage(), path=self.path)
         if record.level >= logging.ERROR:
-            self.status = utils.FAILURE
+            self.status = apycot.FAILURE
 
 
 class LdiUploadChecker(BaseChecker):
@@ -115,10 +115,10 @@ class LdiUploadChecker(BaseChecker):
         self._get_back_infos(cmd)
         if exit_status:
             self.writer.fatal('ldi %s exited with status %s', self.command, exit_status)
-            self.set_status(utils.ERROR)
+            self.set_status(apycot.ERROR)
         return handler.status
 
-register('checker', LdiUploadChecker)
+apycot.register('checker', LdiUploadChecker)
 
 
 class LdiPublishChecker(LdiUploadChecker):
@@ -132,4 +132,4 @@ class LdiPublishChecker(LdiUploadChecker):
         for dist in self.debian_changes:
             self.writer.raw(dist, 'published', type=u'debian.repository')
 
-register('checker', LdiPublishChecker)
+apycot.register('checker', LdiPublishChecker)
