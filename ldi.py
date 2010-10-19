@@ -35,7 +35,7 @@ else:
     RCFILE = osp.expanduser('~/etc/debinstallrc')
 
 LDI = cli.CommandLine('ldi', doc='Logilab debian installer', version=version,
-                      rcfile=RCFILE)
+                      logthreshold='DEBUG', rcfile=RCFILE)
 
 OPTIONS = [
     ('distributions', # XXX to share with lgp
