@@ -136,8 +136,8 @@ class DebianRepository(object):
                 os.remove(path)
 
     def ftparchive_generate(self, dist):
-        command = ['apt-ftparchive', '-q=2',
-                   'generate', self.aptconf_file, dist]
+        command = ['apt-ftparchive', '-q=2', 'generate',
+                   self.aptconf_file, dist]
         self.logger.debug('running command: %s', ' '.join(command))
         pipe = subprocess.Popen(command)
         status = pipe.wait()
@@ -146,8 +146,8 @@ class DebianRepository(object):
 
     def ftparchive_release(self, dist):
         distdir = osp.join(self.dists_directory, dist)
-        command = ['apt-ftparchive', '-c', self.aptconf_file,
-                   'release', distdir,
+        command = ['apt-ftparchive', '-c', self.aptconf_file, 'release',
+                   distdir,
                    '-o', 'APT::FTPArchive::Release::Codename=%s' % dist]
         self.logger.debug('running command: %s', ' '.join(command))
         release_file = osp.join(distdir, 'Release')
