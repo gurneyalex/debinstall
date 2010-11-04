@@ -27,7 +27,7 @@ from distutils.core import setup
 from os.path import isdir, exists, join, walk
 
 # import required features
-from __pkginfo__ import modname, version, license, short_desc, long_desc, \
+from __pkginfo__ import modname, version, license, description, long_desc, \
      web, author, author_email
 # import optional features
 try:
@@ -57,7 +57,7 @@ except ImportError:
 
 BASE_BLACKLIST = ('.hg', 'debian', 'dist', 'build', '__buildlog')
 IGNORED_EXTENSIONS = ('.pyc', '.pyo', '.elc')
-    
+
 
 def ensure_scripts(linuxScripts):
     """
@@ -140,8 +140,8 @@ def install(**kwargs):
     kwargs['packages'] = packages
     dist = setup(name = distname,
                  version = version,
-                 license =license,
-                 description = short_desc,
+                 license = license,
+                 description = description,
                  long_description = long_desc,
                  author = author,
                  author_email = author_email,
@@ -151,7 +151,7 @@ def install(**kwargs):
                  ext_modules=ext_modules,
                  **kwargs
                  )
-    
+
     if dist.have_run.get('install_lib'):
         _install = dist.get_command_obj('install_lib')
         if subpackage_of:
@@ -162,7 +162,7 @@ def install(**kwargs):
                 stream = open(product_init, 'w')
                 stream.write(EMPTY_FILE)
                 stream.close()
-        
+
         # manually install included directories if any
         if include_dirs:
             if subpackage_of:
@@ -173,6 +173,6 @@ def install(**kwargs):
                 dest = join(_install.install_dir, base, directory)
                 export(directory, dest)
     return dist
-            
+
 if __name__ == '__main__' :
     install()
