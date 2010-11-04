@@ -84,38 +84,3 @@ You have now a new virtual repository named "external" from <repository_1> bu us
 
 Read `man ldi` and read documentation in doc/ for more information.
 
-Permissions and system settings
-===============================
-
-By default, debinstall will create a debinstall user and group.
-All files will be owned by debinstall group.
-
-Depending of the command, the expected permissions on files are:
-
-- group will be set to the group defined in */etc/debinstall/debinstallrc*
-- files will have octal 0664 permissions
-
-Remote upload
-=============
-
-That's possible to use dput utility to upload changes files into repositories created by debinstall.
-You have to add an entry in the */etc/dput.rc* file on client side:
-
-	[DEFAULT]
-	login                   = username
-	method                  = scp
-	hash                    = sha
-	allow_unsigned_uploads  = 0
-	run_lintian             = 1
-	default_host_main       = debinstall
-	allowed_distributions   = (?!UNRELEASED)
-
-	[debinstall]
-	fqdn                    = <fqdn of the server>
-	incoming                = <path to the incoming directory (can be chrooted)>
-
-Security Recommandations
-========================
-
-To ensure security and permissions consistency, we encourage you by using dput (and thus ssh) for the Upload command even in localhost.
-
