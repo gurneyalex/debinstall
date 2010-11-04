@@ -35,7 +35,7 @@ else:
     RCFILE = osp.expanduser('~/etc/debinstallrc')
 
 LDI = cli.CommandLine('ldi', doc='Logilab debian installer', version=version,
-                      logthreshold='DEBUG', rcfile=RCFILE)
+                      logthreshold='INFO', rcfile=RCFILE)
 
 OPTIONS = [
     ('distributions', # XXX to share with lgp
@@ -47,9 +47,14 @@ OPTIONS = [
      {'type': 'string', 'short': 'R', 'group': 'main',
       'help': 'directory where repositories are stored',
       }),
-    ('group',
-     {'type': 'string', 'short': 'G', 'group': 'main',
-      'help': 'Unix group to which ldi handled files/directories should belong',
+    ('upload-group',
+     {'type': 'string', 'short': 'U', 'group': 'main',
+      'help': 'Unix group granted to upload files',
+      'default': None, #'debinstall',
+      }),
+    ('publish-group',
+     {'type': 'string', 'short': 'P', 'group': 'main',
+      'help': 'Unix group granted to publish repositories',
       'default': None, #'debinstall',
       }),
     ('checkers',
@@ -61,7 +66,7 @@ OPTIONS = [
 
 
 def run():
-    os.umask(0002)
+    os.umask(006) # user in same group should be able to overwrite files
     LDI.run(sys.argv[1:])
 
 def _repo_path(config, directory):
@@ -74,8 +79,33 @@ def _repo_path(config, directory):
         directory = osp.join(config.repositories_directory, directory)
     return directory
 
+class LDICommand(cli.Command):
+    def schmod(self, path, mode):
+        """safe chmod, log on error"""
+        try:
+            os.chmod(path, mode)
+        except OSError, ex:
+            self.logger.error('cant change mode of %s to %s, fix this by '
+                              'yourself (%s)', path, mode, ex)
 
-class Create(cli.Command):
+    def schown(self, path, group):
+        """safe chown, log on error"""
+        try:
+            sht.chown(path, group=group)
+        except OSError, ex:
+            self.logger.error('cant change group of %s to %s, fix this by '
+                              'yourself (%s)', path, group, ex)
+
+    def srm(self, path):
+        """safe rm, log on error"""
+        try:
+            sht.rm(path)
+        except OSError, ex:
+            self.logger.error('cant remove %s, fix this by yourself (%s)',
+                              path, ex)
+
+
+class Create(LDICommand):
     """create a new repository"""
     name = "create"
     arguments = "<repository path or name>"
@@ -85,22 +115,30 @@ class Create(cli.Command):
     def run(self, args):
         repodir = _repo_path(self.config, args.pop(0))
         # creation of the repository
-        for distname in self.config.distributions:
-            for subdir in ('incoming', 'dists', 'archive'):
-                distribdir = osp.join(repodir, subdir, distname)
+        for subdir, group in (('incoming', self.config.upload_group),
+                              ('dists', self.config.publish_group),
+                              ('archive', self.config.publish_group)):
+            subdir = osp.join(repodir, subdir)
+            for distname in self.config.distributions:
+                if not osp.isdir(subdir):
+                    os.makedirs(subdir)
+                if group:
+                    self.schown(subdir, group=group)
+                self.schmod(subdir, 02775) # sticky group
+                distribdir = osp.join(subdir, distname)
                 if not osp.isdir(distribdir):
                     os.makedirs(distribdir)
-                    if self.config.group:
-                        sht.chown(distribdir, group=self.config.group)
-                    os.chmod(distribdir, 02775)
                     self.logger.info('created %s', distribdir)
                 else:
                     self.logger.info('%s directory already exists', distribdir)
+                    if group:
+                        self.schown(distribdir, group=group)
+                    self.schmod(distribdir, 02775) # sticky group
 
 LDI.register(Create)
 
 
-class Upload(cli.Command):
+class Upload(LDICommand):
     """upload a new package to the incoming queue of a repository"""
     name = "upload"
     min_args = 2
@@ -142,7 +180,8 @@ class Upload(cli.Command):
                 move = sht.mv
             else:
                 move = sht.cp
-            self.perform_changes_file(changes, distribdir, move)
+            self.process_changes_file(changes, distribdir,
+                                      self.config.upload_group, move)
 
     def _check_repository(self, repodir):
         if not osp.isdir(repodir):
@@ -217,30 +256,34 @@ class Upload(cli.Command):
             return result
         return set()
 
-    def perform_changes_file(self, changes, distribdir, move=sht.cp):
+    def process_changes_file(self, changes, distribdir, group,
+                             move=sht.cp, rm=False):
         allfiles = changes.get_all_files()
         # Logilab uses trivial Debian repository and put all generated files in
         # the same place. Badly, it occurs some problems in case of several
         # supported architectures and multiple Debian revision (in this order)
         if move is sht.mv:
             tokeep = self._files_to_keep(changes)
+            rm = False
         else:
-            tokeep = None
+            tokeep = ()
         for filename in allfiles:
-            if tokeep and filename in tokeep:
+            if filename in tokeep:
                 move_ = sht.cp
             else:
                 move_ = move
             destfile = osp.join(distribdir, osp.basename(filename))
             self.logger.debug("%s %s %s", move_.__name__, filename, destfile)
             move_(filename, distribdir)
-            if self.config.group:
-                sht.chown(destfile, group=self.config.group)
-            os.chmod(destfile, 0664)
+            if group:
+                self.schown(destfile, group=group)
+            self.schmod(destfile, 0664)
+        if rm:
+            tokeep = allfiles
         if tokeep:
             for filename in tokeep:
-                self.logger.debug("rm %s %s", filename)
-                sht.rm(filename)
+                self.logger.debug("rm %s", filename)
+                self.srm(filename)
         distrib = osp.basename(distribdir)
         changeslist = self.debian_changes.setdefault(distrib, [])
         changeslist.append(osp.join(distribdir, changes.filename))
@@ -263,7 +306,7 @@ class Publish(Upload):
           'help': 'GPG identifier of the key to use to sign the repository',
           }),
         ('refresh',
-         {'action': "store_true",
+         {'action': "store_true", 'short': 'r',
           'help': 'refresh the whole repository index files',
           'default': False,
           }),
@@ -290,7 +333,9 @@ class Publish(Upload):
                 changes = self._check_changes_file(filename)
                 self._check_signature(changes)
                 self._run_checkers(changes)
-                self.perform_changes_file(changes, destdir, sht.mv)
+                # perform a copy instead of a move to reset file ownership
+                self.process_changes_file(changes, destdir,
+                                          self.config.publish_group, rm=True)
                 # mark distribution to be refreshed at the end
                 distribs.add(distrib)
             repo.generate_aptconf()

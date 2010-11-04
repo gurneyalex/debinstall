@@ -1,6 +1,7 @@
 [main]
 repositories-directory=/var/debian/repositories
-group=
+upload-group=
+publish-group=
 checkers=lintian
 
 [upload]
