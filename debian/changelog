@@ -1,3 +1,9 @@
+debinstall (2.4.0-1) unstable; urgency=low
+
+  * new upstream release
+
+ -- Sylvain Thénault <sylvain.thenault@logilab.fr>  Fri, 12 Nov 2010 11:41:57 +0100
+
 debinstall (2.3.0-1) unstable; urgency=low
 
   * New upstream release.
