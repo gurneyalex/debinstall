@@ -39,8 +39,8 @@ long_desc = """
 
 scripts = ['bin/ldi']
 
-from os.path import join
+from os.path import join, isdir
 include_dirs = [join('tests', 'data'), join('tests', 'packages')]
 
 if isdir('narval'):
-    data_files = [[join('var', 'lib', 'narval', 'plugins'), listdir('narval')]]
+    data_files = [[join('var', 'lib', 'narval', 'plugins'), [join('narval', 'debinstall.py')]]]
