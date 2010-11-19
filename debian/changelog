@@ -1,3 +1,12 @@
+debinstall (2.4.0-2) unstable; urgency=low
+
+  * debian/control:
+    - add 'logilab-packaging' in Depends
+    - change Maintainer to Logilab S.A.
+  * Fix lintian warnings (for lenny)
+
+ -- Julien Jehannet <julien.jehannet@logilab.fr>  Fri, 19 Nov 2010 10:55:05 +0100
+
 debinstall (2.4.0-1) unstable; urgency=low
 
   * new upstream release
