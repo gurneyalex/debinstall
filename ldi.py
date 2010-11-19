@@ -185,7 +185,7 @@ class Upload(LDICommand):
 
     def _check_repository(self, repodir):
         if not osp.isdir(repodir):
-            raise cli.CommandError("Repository %s doesn't exist")
+            raise cli.CommandError("Repository doesn't exist: %s" % repodir)
         for section in ('dists', 'incoming'):
             subdir = osp.join(repodir, section)
             if not osp.isdir(subdir):
