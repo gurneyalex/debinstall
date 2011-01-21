@@ -517,7 +517,11 @@ class Diff(Upload):
         repo1 = repo.packages_index(dists=self.config.distributions)
         self.logger.debug('**** analyzing repo %s', trepo.ldiname)
         repo2 = {}
-        for dist, archi, package, version in trepo.iter_changes_files(dists=self.config.distributions):
+        if 'all' in self.config.distributions:
+            dists = None
+        else:
+            dists = self.config.distributions
+        for dist, archi, package, version in trepo.iter_changes_files(dists=dists):
             repo2[package] = max(repo2.get(package), version)
             try:
                 repo1[package][dist][archi] = [v for v in repo1[package][dist][archi]
