@@ -511,16 +511,16 @@ class Diff(Upload):
         ]
 
     def run(self, args):
-        repo = self._check_repository(_repo_path(self.config, args.pop(0)))
-        trepo = self._check_repository(_repo_path(self.config, args.pop(0)))
-        self.logger.debug('**** analyzing repo %s', repo.ldiname)
-        repo1 = repo.packages_index(dists=self.config.distributions)
-        self.logger.debug('**** analyzing repo %s', trepo.ldiname)
-        repo2 = {}
         if 'all' in self.config.distributions:
             dists = None
         else:
             dists = self.config.distributions
+        repo = self._check_repository(_repo_path(self.config, args.pop(0)))
+        trepo = self._check_repository(_repo_path(self.config, args.pop(0)))
+        self.logger.debug('**** analyzing repo %s', repo.ldiname)
+        repo1 = repo.packages_index(dists=dists)
+        self.logger.debug('**** analyzing repo %s', trepo.ldiname)
+        repo2 = {}
         for dist, archi, package, version in trepo.iter_changes_files(dists=dists):
             repo2[package] = max(repo2.get(package), version)
             try:
