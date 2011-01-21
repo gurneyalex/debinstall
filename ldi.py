@@ -110,10 +110,17 @@ class Create(LDICommand):
     name = "create"
     arguments = "<repository path or name>"
     min_args = max_args = 1
-    options = OPTIONS
+    options = OPTIONS + [
+            ('update',
+             {'action': 'store_true', 'short': 'u', 'group': 'main',
+              'help': 'update an existing repository (add a distribution, change ownership...)',
+              }),
+        ]
 
     def run(self, args):
         repodir = _repo_path(self.config, args.pop(0))
+        if self.config.update and not osp.exists(repodir):
+            raise cli.CommandError("Repository %s doesn't exist" % repodir)
         # creation of the repository
         for subdir, group in (('incoming', self.config.upload_group),
                               ('dists', self.config.publish_group),
@@ -134,6 +141,10 @@ class Create(LDICommand):
                     if group:
                         self.schown(distribdir, group=group)
                     self.schmod(distribdir, 02775) # sticky group
+                if group and self.config.update:
+                    for fname in os.listdir(distribdir):
+                        self.schown(osp.join(distribdir, fname), group=group)
+
 
 LDI.register(Create)
 
