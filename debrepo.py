@@ -32,7 +32,11 @@ Version.__hash__ = lambda x: x.value.__hash__()
 
 def split_version(version):
     upstreamversion, debversion = version.value.split('-', 1)
-    return Version(upstreamversion), int(debversion)
+    try:
+        debversion = int(debversion)
+    except ValueError:
+        pass
+    return Version(upstreamversion), debversion
 
 def major_version(version):
     return [int(num) for num in version.value.split('-', 1)[0].split('.')[:2]]
