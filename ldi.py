@@ -550,7 +550,7 @@ class Diff(Upload):
                         if sht.ASK.confirm('upload to %s?' % trepo.ldiname):
                             for distarch in missing[version]:
                                 dist, arch = distarch.split('-')
-                                changes = osp.join(repo.directory, dist,
+                                changes = osp.join(repo.directory, 'dists', dist,
                                                    debrepo.changesfile(package, version, arch))
                                 os.system('ldi upload %s %s' % (trepo.directory, changes))
 
