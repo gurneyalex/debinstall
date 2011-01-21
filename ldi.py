@@ -207,14 +207,17 @@ class Upload(LDICommand):
 
     def _check_changes_file(self, changes_file):
         """basic tests to determine debian changes file"""
-        if changes_file.endswith('.changes') and osp.isfile(changes_file):
-            try:
-                return Changes(changes_file)
-            except Exception, ex:
-                raise cli.CommandError(
-                    '%s is not a debian changes file: %s' % (changes_file, ex))
-        raise cli.CommandError(
-            '%s is not a Debian changes file (bad extension)' % changes_file)
+        if not changes_file.endswith('.changes'):
+            raise cli.CommandError(
+                '%s is not a debian changes file (bad extension)' % changes_file)
+        if not osp.isfile(changes_file):
+            raise cli.CommandError(
+                '%s doesn\'t exist or is not a regulary file' % changes_file)
+        try:
+            return Changes(changes_file)
+        except Exception, ex:
+            raise cli.CommandError(
+                '%s is not a debian changes file: %s' % (changes_file, ex))
 
     def _check_signature(self, changes):
         """raise error if the changes files and appropriate dsc files are not
