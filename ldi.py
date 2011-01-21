@@ -74,7 +74,7 @@ def _repo_path(config, directory):
         if not config.repositories_directory:
             raise cli.CommandError(
                 'Give either an absolute path to a directory that should '
-                'hold the repository or a repository name and specify its'
+                'hold the repository or a repository name and specify its '
                 'directory using --repositories-directory')
         directory = osp.join(config.repositories_directory, directory)
     return directory
@@ -185,7 +185,7 @@ class Upload(LDICommand):
 
     def _check_repository(self, repodir):
         if not osp.isdir(repodir):
-            raise cli.CommandError("Repository doesn't exist: %s" % repodir)
+            raise cli.CommandError("Repository %s doesn't exist" % repodir)
         for section in ('dists', 'incoming'):
             subdir = osp.join(repodir, section)
             if not osp.isdir(subdir):
@@ -545,7 +545,7 @@ class Reduce(Upload):
     """Reduce packages published in a repository.
 
     When a package has version X.Y.Z publish, automatically delete all versions
-    between X.Y.0 and X.Y.MAX(Z).
+    between X.Y.0 and X.Y.(Z - 1).
     """
     name = "reduce"
     min_args = max_args = 1
