@@ -511,7 +511,7 @@ class Diff(Upload):
         repo = self._check_repository(_repo_path(self.config, args.pop(0)))
         trepo = self._check_repository(_repo_path(self.config, args.pop(0)))
         self.logger.debug('**** analyzing repo %s', repo.ldiname)
-        repo1 = repo.packages_index(None, self.config.distributions)
+        repo1 = repo.packages_index(dists=self.config.distributions)
         self.logger.debug('**** analyzing repo %s', trepo.ldiname)
         repo2 = {}
         for dist, archi, package, version in trepo.iter_changes_files(dists=self.config.distributions):
@@ -572,7 +572,7 @@ class Reduce(Upload):
 
     def run(self, args):
         repo = self._check_repository(_repo_path(self.config, args.pop(0)))
-        idx = repo.packages_index(self.config.package, None)
+        idx = repo.packages_index(self.config.package)
         for package in sorted(idx):
             for dist, distinfo in idx[package].iteritems():
                 for archi, versions in distinfo.iteritems():
