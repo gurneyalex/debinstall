@@ -131,13 +131,13 @@ class DebianRepository(object):
     def dist_clean(self, dist):
         for mask in ['Packages*', 'Source*', 'Content*', 'Release*']:
             for path in glob(osp.join(self.dists_directory, dist, mask)):
-                self.logger.debug("remove '%s'", path)
+                self.logger.debug('rm %s', path)
                 os.remove(path)
 
     def ftparchive_generate(self, dist):
         command = ['apt-ftparchive', '-q=2', 'generate',
                    self.aptconf_file, dist]
-        self.logger.debug('running command: %s', ' '.join(command))
+        self.logger.debug(' '.join(command))
         pipe = subprocess.Popen(command)
         status = pipe.wait()
         if status != 0:
@@ -250,6 +250,4 @@ class DebianRepository(object):
             if lastversion == majorversion:
                 self.archive_package(dist, package, version, archi)
             else:
-                self.logger.info('%s %s %s %s', dist, archi, lastversion,
-                                 majorversion)
                 lastversion = majorversion
