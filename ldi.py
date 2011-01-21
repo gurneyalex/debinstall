@@ -594,8 +594,8 @@ LDI.register(Reduce)
 
 class Archive(Upload):
     """Archive some versions of a package published in a repository."""
-    name = "reduce"
-    min_args = max_args = 2
+    name = "archive"
+    min_args = max_args = 3
     arguments = "<repository> <source package> <up to version>"
     options = [OPTIONS[1]] + [
         ('down-to-version',
