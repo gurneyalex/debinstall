@@ -206,8 +206,7 @@ class DebianRepository(object):
                     self.logger.warning('skip misnamed package %s', changes)
 
     @cached
-    def packages_index(self, package, dists):
-        """don't use named arguments to call this method (use @cached)"""
+    def packages_index(self, package=None, dists=None):
         repo1 = {}
         for dist, archi, package, version in self.iter_changes_files(package, dists):
             repo1.setdefault(package, {}).setdefault(dist, {}).setdefault(archi, set()).add(version)
