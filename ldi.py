@@ -540,6 +540,8 @@ class Diff(Upload):
                                                    debrepo.changesfile(package, version, arch))
                                 os.system('ldi upload %s %s' % (trepo.directory, changes))
 
+LDI.register(Diff)
+
 
 class Reduce(Upload):
     """Reduce packages published in a repository.
@@ -568,6 +570,8 @@ class Reduce(Upload):
                     except:
                         self.logger.exception('error while processing %s %s %s',
                                               dist, package, archi)
+
+LDI.register(Reduce)
 
 
 class Archive(Upload):
@@ -601,6 +605,8 @@ class Archive(Upload):
             if downtoversion is not None and upstreamversion < downtoversion:
                 continue
             repo.archive_package(dist, package, version, archi)
+
+LDI.register(Archive)
 
 
 if __name__ == '__main__':
