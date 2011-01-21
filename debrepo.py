@@ -21,7 +21,6 @@ import subprocess
 import shutil
 from glob import glob
 
-from logilab.common.decorators import cached
 from logilab.common.clcommands import CommandError
 
 from logilab.devtools.lib.changelog import Version
@@ -205,7 +204,6 @@ class DebianRepository(object):
                 except ValueError:
                     self.logger.warning('skip misnamed package %s', changes)
 
-    @cached
     def packages_index(self, package=None, dists=None):
         repo1 = {}
         for dist, archi, package, version in self.iter_changes_files(package, dists):
