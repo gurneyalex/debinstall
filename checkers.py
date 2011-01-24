@@ -48,6 +48,8 @@ class Checker(object):
 
 class LintianChecker(Checker):
     command = "lintian"
+    # XXX make options configurable
+    options = ['-vi', '--suppress-tags', 'bad-distribution-in-changes-file']
     ok_status = (0, 2)
 
 
