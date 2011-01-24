@@ -1,72 +1,149 @@
 ChangeLog for debinstall
 ========================
 
-2009-10-08  -- 2.3
+2011-01-24  --  2.4.1
+    * various bugs fixed
+
+    * nicer logging
+
+    * lintian configured to ignore bad distribution in changelog
+
+
+
+2010-11-12  --  2.4
+    * major rewrite
+	- change security model (no more setuid on ldi, use two unix
+	  groups for upload/publish specified in configuration file
+	- refactor code
+
+    * kill list and destroy commands, may be some will be resurrected later
+
+    * new archive and reduce commands
+
+
+
+2009-10-08  --  2.3
     * #9938: add several repository checks
+
     * #6818: correct Release checksum
+
     * #2844: multiple architectures support (partially)
+
     * #6756: valid debinstall user
+
     * #8885: new ldi list options
+
     * #7894: ldi destroy improvment
+
     * #9929: improve dialog messages
+
+
 
 2009-06-15  --  2.2.3
     * #8867: simultaneous ldi not possible
+
     * #9197: wrong Suite value in file
+
     * #9026: ldi requires gpg to be setuid root
+
     * #6565: manage symbolic distributions
+
     * #6818: Release checksum seems invalid
+
+
 
 2009-01-13  --  2.2.0
     * #6763: ldi publish : change distribution
+
     * #6861: ldi publish is very quiet
+
     * #4900: ldi upload exception
+
     * #4482: ldi destroy (only for a whole repository)
+
+
 
 2008-11-28  --  2.1.3
     * Add refresh option to Publish command
+
     * Accept symlink as valid distribution in repository
+
     * Fix Suite value in Release file
+
+
 
 2008-11-04  --  2.1.0
     * Add support for multiple distributions in same repository
+
     * New option --remove for upload command
+
     * Remove linda dependency
+
+
 
 2008-01-08  --  2.0.0
     * complete rewrite
+
     * debinstall command is deprecated. Use ldi instead
+
+
 
 2007-06-28  --  0.5.0
     * use logging module to give information about current step (closes #11240)
+
     * check that we are really upgrading and warn if we downgrade (closes #11239)
+
     * prevent gpg from prompting to confirm overwrite of Release.gpg if nothing has changed
+
     * generate nicer Release files (with more fields)
+
     * fixed bugs in --check-repo-integrity
+
     * added some short options
+
     * compress indexes with bz2 (closes: #3011)
+
     * use an apt.conf file to get a correct Release file (closes #2832)
+
     * fixe path issues in index files (closes #3941)
+
+
 
 2006-03-08  --  0.4.0
     * bug fixes
+
     * offers to sign repository (new apt check)
+
+
 
 2006-02-21  --  0.3.0
     * uses Replace to find previous packages
+
     * offers to use linda/lintian
+
     * use optparse instead of getopt
+
     * more checks
+
     * functionnality to check repository
+
     * Packages generation corrected
+
+
 
 2006-02-08  --  0.2.0
     * added possibility of choosing the processing of one package in
 	particular (usefull for creating partial repositories for a
 	package and all its dependencies)
 
+
+
 2006-02-07  --  0.1.0
     * First release.
+
     * minimal functionnality : move packages between incoming,
 	repository and old archive, do basic checks in the process, and
 	has a simple cleanup algorithm.
+
+
+
