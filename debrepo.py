@@ -22,13 +22,9 @@ import shutil
 from glob import glob
 
 from logilab.common.clcommands import CommandError
-
-from logilab.devtools.lib.changelog import Version
+from logilab.common.changelog import Version
 
 from debinstall.debfiles import Changes
-
-Version.__hash__ = lambda x: x.value.__hash__()
-#Version.__cmp__ = lambda x,o: (x < o and -1) or (x > o and 1) or 0
 
 def split_version(version):
     upstreamversion, debversion = version.value.split('-', 1)
