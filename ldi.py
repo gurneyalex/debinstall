@@ -543,10 +543,10 @@ class Diff(Upload):
                     print '* %s (%s)' % (package, repo2version)
                     lastversion = None
                     for version in reversed(sorted(missing)):
-                        if lastversion is not None and debrepo.major_version(version) == lastversion:
+                        if lastversion is not None and version[:2] == lastversion:
                             continue
                         print '  - %s (%s)' % (version, ', '.join(missing[version])),
-                        lastversion = debrepo.major_version(version)
+                        lastversion = version[:2]
                         if repo2version == version:
                             print 'MISSING DIST / ARCH'
                         else:
@@ -614,7 +614,7 @@ class Archive(Upload):
             downtoversion = debrepo.Version(self.config.down_to_version)
         isdebianversion = '-' in baseversion
         for dist, archi, package, version in repo.iter_changes_files(package=sourcepackage):
-            upstreamversion = debrepo.split_version(version)[0]
+            upstreamversion = version[:3]
             if isdebianversion:
                 if version > baseversion:
                     continue
