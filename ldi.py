@@ -551,7 +551,11 @@ class Diff(Upload):
                             print 'MISSING DIST / ARCH'
                         else:
                             print 'UNRELEASED'
-                        if sht.ASK.confirm('upload to %s?' % trepo.ldiname):
+                        answer = sht.ASK.ask('upload to %s?' % trepo.ldiname,
+                                             ('yes', 'no', 'skip'), 'yes')
+                        if answer == 's':
+                            break
+                        if answer == 'y':
                             for distarch in missing[version]:
                                 dist, arch = distarch.split('-')
                                 changes = osp.join(repo.directory, 'dists', dist,
