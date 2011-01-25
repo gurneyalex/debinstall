@@ -35,7 +35,7 @@ class Version(BaseVersion):
     def __new__(cls, versionstr):
         if isinstance(versionstr, basestring):
             try:
-                versionstr, debversion = version.split('-', 1)
+                versionstr, debversion = versionstr.split('-', 1)
             except ValueError:
                 debversion = None
             else:
@@ -58,7 +58,7 @@ class Version(BaseVersion):
             raise ValueError("invalid literal for version '%s' (%s)"%(versionstr, ex))
 
     def __str__(self):
-        version = '.'.join(self.upstream_version)
+        version = '.'.join(str(num) for num in self.upstream_version)
         debianversion = self.debian_version
         if debianversion is not None:
             return '%s-%s' % (version, debianversion)
@@ -67,16 +67,16 @@ class Version(BaseVersion):
     @property
     def upstream_version(self):
         version = []
-        for num in version:
+        for num in self:
             if num is _SEPARATOR:
-                return
+                break
             version.append(num)
         return tuple(version)
 
     @property
     def debian_version(self):
         separator_found = False
-        for num in version:
+        for num in self:
             if separator_found is True:
                 return num
             if num is _SEPARATOR:
