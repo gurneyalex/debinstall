@@ -22,12 +22,12 @@ class Changes_TC(TestCase):
 
     def test_get_dsc(self):
         dsc = self.signed.get_dsc()
-        self.assertEquals(dsc, osp.join(self.signed.dirname,
+        self.assertEqual(dsc, osp.join(self.signed.dirname,
                                         "package1_1.0-1.dsc"))
 
     def test_get_dsc_no_source(self):
         dsc = self.no_source.get_dsc()
-        self.assertEquals(dsc, None)
+        self.assertEqual(dsc, None)
 
     def test_all_files(self):
         dirname = self.signed.dirname
@@ -38,7 +38,7 @@ class Changes_TC(TestCase):
                         'package1_1.0-1_all.deb']
         signed_files = [osp.join(dirname, f) for f in signed_files]
         result = self.signed.get_all_files()
-        self.assertUnorderedIterableEquals(signed_files, result)
+        self.assertItemsEqual(signed_files, result)
 
     def test_check_sig(self):
         self.signed.check_sig()
