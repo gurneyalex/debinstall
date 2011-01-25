@@ -22,24 +22,66 @@ import shutil
 from glob import glob
 
 from logilab.common.clcommands import CommandError
-from logilab.common.changelog import Version
+from logilab.common.changelog import Version as BaseVersion
 
 from debinstall.debfiles import Changes
-
-def split_version(version):
-    upstreamversion, debversion = version.value.split('-', 1)
-    try:
-        debversion = int(debversion)
-    except ValueError:
-        pass
-    return Version(upstreamversion), debversion
-
-def major_version(version):
-    return [int(num) for num in version.value.split('-', 1)[0].split('.')[:2]]
 
 def changesfile(package, version, archi):
     return '%s_%s_%s.changes' % (package, version, archi)
 
+_SEPARATOR = object()
+
+class Version(BaseVersion):
+    def __new__(cls, versionstr):
+        if isinstance(versionstr, basestring):
+            try:
+                versionstr, debversion = version.split('-', 1)
+            except ValueError:
+                debversion = None
+            else:
+                try:
+                    debversion = int(debversion)
+                except ValueError:
+                    pass
+            parsed = cls.parse(versionstr)
+            if debversion is not None:
+                parsed.append(_SEPARATOR)
+                parsed.append(debversion)
+        return tuple.__new__(cls, parsed)
+
+    @classmethod # remove once lgc > 0.54 is out
+    def parse(cls, versionstr):
+        versionstr = versionstr.strip(' :')
+        try:
+            return [int(i) for i in versionstr.split('.')]
+        except ValueError, ex:
+            raise ValueError("invalid literal for version '%s' (%s)"%(versionstr, ex))
+
+    def __str__(self):
+        version = '.'.join(self.upstream_version)
+        debianversion = self.debian_version
+        if debianversion is not None:
+            return '%s-%s' % (version, debianversion)
+        return version
+
+    @property
+    def upstream_version(self):
+        version = []
+        for num in version:
+            if num is _SEPARATOR:
+                return
+            version.append(num)
+        return tuple(version)
+
+    @property
+    def debian_version(self):
+        separator_found = False
+        for num in version:
+            if separator_found is True:
+                return num
+            if num is _SEPARATOR:
+                separator_found = True
+        return None
 
 APTDEFAULT_APTCONF = '''// Generated file, do not modify !!
 
@@ -200,7 +242,7 @@ class DebianRepository(object):
                 package, version, archi = changes.split('_')
                 try:
                     yield (dist, archi.replace('.changes', ''),
-                           osp.basename(package), split_version(version))
+                           osp.basename(package), Version(version))
                 except ValueError:
                     self.logger.warning('skip misnamed package %s', changes)
 
@@ -233,7 +275,7 @@ class DebianRepository(object):
             if osp.exists(fpath):
                 self.logger.debug('%s %s', move.__name__, fpath)
                 move(fpath, osp.join(archivedir, osp.basename(fpath)))
-        upstreamversion, debversion = split_version(version)
+        upstreamversion, debversion = version.upstream_version, version.debian_version
         if debversion != 1:
             # don't remove .orig.tar.gz for debian version != 1
             move = shutil.copy
@@ -244,9 +286,9 @@ class DebianRepository(object):
 
     def reduce_package(self, dist, package, versions, archi):
         versions = sorted(versions)
-        lastversion = major_version(versions.pop())
+        lastversion = versions.pop()[:2]
         for version in reversed(versions):
-            majorversion = major_version(version)
+            majorversion = version[:2]
             if lastversion == majorversion:
                 self.archive_package(dist, package, version, archi)
             else:
