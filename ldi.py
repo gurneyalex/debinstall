@@ -553,9 +553,9 @@ class Diff(Upload):
                             print 'UNRELEASED'
                         answer = sht.ASK.ask('upload to %s?' % trepo.ldiname,
                                              ('yes', 'no', 'skip'), 'yes')
-                        if answer == 's':
+                        if answer == 'skip':
                             break
-                        if answer == 'y':
+                        if answer == 'yes':
                             for distarch in missing[version]:
                                 dist, arch = distarch.split('-')
                                 changes = osp.join(repo.directory, 'dists', dist,
