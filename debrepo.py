@@ -200,7 +200,7 @@ class DebianRepository(object):
                 package, version, archi = changes.split('_')
                 try:
                     yield (dist, archi.replace('.changes', ''),
-                           osp.basename(package), Version(version))
+                           osp.basename(package), split_version(version))
                 except ValueError:
                     self.logger.warning('skip misnamed package %s', changes)
 
