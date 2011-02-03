@@ -26,7 +26,9 @@ from logilab.common.changelog import Version as BaseVersion
 
 from debinstall.debfiles import Changes
 
-def changesfile(package, version, archi):
+def changesfile(package, version, archi, upstreamversion=False):
+    if upstreamversion:
+        return '%s_%s-*_%s.changes' % (package, version, archi)
     return '%s_%s_%s.changes' % (package, version, archi)
 
 _SEPARATOR = object()
@@ -282,9 +284,11 @@ class DebianRepository(object):
             if osp.exists(fpath):
                 self.logger.debug('%s %s', move.__name__, fpath)
                 move(fpath, osp.join(archivedir, osp.basename(fpath)))
-        upstreamversion, debversion = version.upstream_version, version.debian_version
-        if debversion != 1:
-            # don't remove .orig.tar.gz for debian version != 1
+        upstreamversion = Version(version.upstream_version)
+        if glob(osp.join(distdir, changesfile(package, upstreamversion, '*',
+                                              upstreamversion=True))):
+            # don't remove .orig.tar.gz if there still exists packages for that
+            # upstream version
             move = shutil.copy
         fpath  = osp.join(distdir, '%s_%s.orig.tar.gz' % (package, upstreamversion))
         if osp.exists(fpath):
