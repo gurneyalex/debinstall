@@ -18,6 +18,7 @@ packages and repositories
 """
 
 import sys
+import shutil
 import os
 import os.path as osp
 from glob import glob
@@ -645,7 +646,12 @@ class Check(LDICommand):
     name = "check"
     min_args = max_args = 1
     arguments = "<repository>"
-    options = OPTIONS[:2]
+    options = OPTIONS[:2] + [
+        ('archive',
+         {'action': 'store_true', 'short': 'a', 'default': False,
+          'help': 'move untracked files to archive',
+          }),
+        ]
 
     def run(self, args):
         repo = debrepo.DebianRepository(
@@ -678,6 +684,10 @@ class Check(LDICommand):
         if allfiles:
             print 'untracked files:'
             print '\n'.join(sorted(allfiles))
+            if self.config.archive:
+                for fpath in allfiles:
+                    shutil.move(osp.join(repo.dists_directory, fpath),
+                                osp.join(repo.archive_directory, fpath))
         else:
             print 'no untracked files:'
 
