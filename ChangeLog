@@ -1,5 +1,17 @@
 ChangeLog for debinstall
 ========================
+--
+    * new 'ldi check' command to check repository consistency (eg
+      untracked files and files references in .changes but non existant
+      on the file system)
+
+    * fix bug in package archiving, leading to remaining junk (non
+      archived files)
+
+    * 'ldi diff' don't run checker on upload, and propose to skip a whole
+      package
+
+    * various other bugs fixed
 
 2011-01-24  --  2.4.1
     * various bugs fixed
