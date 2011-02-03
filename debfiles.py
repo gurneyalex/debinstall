@@ -69,7 +69,7 @@ class Changes(object):
         packages = set()
         if self['Source']:
             packages.add(self['Source'])
-        for binpkg in self['Binary']:
+        for binpkg in self['Binary'].split():
             assert packages # assert source package has been found
             packages.add(binpkg)
         return packages
