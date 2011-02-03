@@ -599,7 +599,7 @@ LDI.register(Reduce)
 class Archive(Upload):
     """Archive some versions of a package published in a repository."""
     name = "archive"
-    min_args = max_args = 3
+    min_args = max_args = 2
     arguments = "<repository> <source package>"
     options = [OPTIONS[1]] + [
         ('up-to-version',
@@ -613,7 +613,7 @@ class Archive(Upload):
         ]
 
     def run(self, args):
-        repo = debrepo.DebianRepository(_repo_path(self.config, args.pop(0)))
+        repo = debrepo.DebianRepository(self.logger, _repo_path(self.config, args.pop(0)))
         sourcepackage = args.pop(0)
         if self.config.down_to_version is None:
             downtoversion = None
