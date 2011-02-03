@@ -41,7 +41,7 @@ OPTIONS = [
     ('distributions', # XXX to share with lgp
      {'type': 'csv', 'short': 'd', 'group': 'main',
       'help': 'comma separated list of distributions supported by the repository',
-      'default': ['lenny', 'squeeze', 'sid'],
+      'default': ['all'],
       }),
     ('repositories-directory',
      {'type': 'string', 'short': 'R', 'group': 'main',
@@ -121,12 +121,16 @@ class Create(LDICommand):
         repodir = _repo_path(self.config, args.pop(0))
         if self.config.update and not osp.exists(repodir):
             raise cli.CommandError("Repository %s doesn't exist" % repodir)
+        if 'all' in self.config.distributions:
+            dists = ['lenny', 'squeeze', 'sid']
+        else:
+            dists = self.config.distributions
         # creation of the repository
         for subdir, group in (('incoming', self.config.upload_group),
                               ('dists', self.config.publish_group),
                               ('archive', self.config.publish_group)):
             subdir = osp.join(repodir, subdir)
-            for distname in self.config.distributions:
+            for distname in dists:
                 if not osp.isdir(subdir):
                     os.makedirs(subdir)
                 if group:
