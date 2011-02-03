@@ -47,6 +47,8 @@ class Version(BaseVersion):
             if debversion is not None:
                 parsed.append(_SEPARATOR)
                 parsed.append(debversion)
+        else:
+            parsed = versionstr
         return tuple.__new__(cls, parsed)
 
     @classmethod # remove once lgc > 0.54 is out
