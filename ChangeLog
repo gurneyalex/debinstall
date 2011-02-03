@@ -1,6 +1,7 @@
 ChangeLog for debinstall
 ========================
---
+
+2011-02-03  --  2.4.2
     * new 'ldi check' command to check repository consistency (eg
       untracked files and files references in .changes but non existant
       on the file system)
@@ -12,6 +13,8 @@ ChangeLog for debinstall
       package
 
     * various other bugs fixed
+
+
 
 2011-01-24  --  2.4.1
     * various bugs fixed
