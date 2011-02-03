@@ -244,6 +244,7 @@ class DebianRepository(object):
     def iter_packages(self, package=None, dists=None):
         for changesfile in self.iter_changes_files(package, dists):
             package, version, archi = changesfile.split('_')
+            dist = osp.basename(osp.dirname(changesfile))
             try:
                 yield (dist, archi.replace('.changes', ''),
                        osp.basename(package), Version(version))
