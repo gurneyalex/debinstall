@@ -600,10 +600,14 @@ class Archive(Upload):
     """Archive some versions of a package published in a repository."""
     name = "archive"
     min_args = max_args = 3
-    arguments = "<repository> <source package> <up to version>"
+    arguments = "<repository> <source package>"
     options = [OPTIONS[1]] + [
-        ('down-to-version',
+        ('up-to-version',
          {'type': 'string', 'short': 'u',
+          'help': 'don\'t remove package with version prior to given value',
+          }),
+        ('down-to-version',
+         {'type': 'string', 'short': 'd',
           'help': 'don\'t remove package with version prior to given value',
           }),
         ]
@@ -611,20 +615,18 @@ class Archive(Upload):
     def run(self, args):
         repo = debrepo.DebianRepository(_repo_path(self.config, args.pop(0)))
         sourcepackage = args.pop(0)
-        baseversion = debrepo.Version(args.pop(0))
         if self.config.down_to_version is None:
             downtoversion = None
         else:
             downtoversion = debrepo.Version(self.config.down_to_version)
-        isdebianversion = '-' in baseversion
+        if self.config.up_to_version is None:
+            uptoversion = None
+        else:
+            uptoversion = debrepo.Version(self.config.up_to_version)
         for dist, archi, package, version in repo.iter_changes_files(package=sourcepackage):
-            upstreamversion = version[:3]
-            if isdebianversion:
-                if version > baseversion:
-                    continue
-            elif upstreamversion > baseversion:
+            if uptoversion is not None and version > uptoversion:
                 continue
-            if downtoversion is not None and upstreamversion < downtoversion:
+            if downtoversion is not None and version < downtoversion:
                 continue
             repo.archive_package(dist, package, version, archi)
 
