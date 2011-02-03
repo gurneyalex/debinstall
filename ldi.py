@@ -693,7 +693,7 @@ class Check(LDICommand):
                     shutil.move(osp.join(repo.dists_directory, fpath),
                                 osp.join(repo.archive_directory, fpath))
         else:
-            print 'no untracked files:'
+            print 'no untracked files'
 
 LDI.register(Check)
 
