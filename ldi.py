@@ -560,7 +560,9 @@ class Diff(Upload):
                                 dist, arch = distarch.split('-')
                                 changes = osp.join(repo.directory, 'dists', dist,
                                                    debrepo.changesfile(package, version, arch))
-                                os.system('ldi upload %s %s' % (trepo.directory, changes))
+                                # -C" " to disable checkers, packages are 
+                                # already in, don't check them agin
+                                os.system('ldi upload -C" " %s %s' % (trepo.directory, changes))
 
 LDI.register(Diff)
 
