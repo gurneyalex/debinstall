@@ -674,7 +674,7 @@ class Check(LDICommand):
                     allfiles.remove(osp.join(dist, osp.basename(fname)))
                 except KeyError:
                     self.logger.error('package %s reference unexisting file %s',
-                                      changesf, osp.basename(fname))
+                                      osp.join(dist, osp.basename(changesf)), osp.basename(fname))
         if allfiles:
             print 'untracked files:'
             print '\n'.join(sorted(allfiles))
