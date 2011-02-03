@@ -672,20 +672,24 @@ class Check(LDICommand):
                 if fname.startswith(('Packages', 'Sources', 'Contents', 'Release')):
                     continue
                 allfiles.add(osp.join(dist, fname))
+        untrackedfiles = allfiles.copy()
         for changesf in repo.iter_changes_files(dists=dists):
             dist = osp.basename(osp.dirname(changesf))
             changes = Changes(osp.join(repo.dists_directory, changesf))
             for fname in changes.get_all_files(False):
                 try:
-                    allfiles.remove(osp.join(dist, osp.basename(fname)))
+                    untrackedfiles.remove(osp.join(dist, osp.basename(fname)))
                 except KeyError:
+                    if osp.join(dist, osp.basename(fname)) in allfiles:
+                        continue # shared file already removed from untrackedfiles
                     self.logger.error('package %s reference unexisting file %s',
-                                      osp.join(dist, osp.basename(changesf)), osp.basename(fname))
-        if allfiles:
+                                      osp.join(dist, osp.basename(changesf)),
+                                      osp.basename(fname))
+        if untrackedfiles:
             print 'untracked files:'
-            print '\n'.join(sorted(allfiles))
+            print '\n'.join(sorted(untrackedfiles))
             if self.config.archive:
-                for fpath in allfiles:
+                for fpath in untrackedfiles:
                     shutil.move(osp.join(repo.dists_directory, fpath),
                                 osp.join(repo.archive_directory, fpath))
         else:
