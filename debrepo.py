@@ -239,16 +239,20 @@ class DebianRepository(object):
                 self.logger.debug('skip distrib %s', dist)
                 continue
             for changes in glob(osp.join(self.dists_directory, dist, matchstring)):
-                package, version, archi = changes.split('_')
-                try:
-                    yield (dist, archi.replace('.changes', ''),
-                           osp.basename(package), Version(version))
-                except ValueError:
-                    self.logger.warning('skip misnamed package %s', changes)
+                yield changes
+
+    def iter_packages(self, package=None, dists=None):
+        for changesfile in self.iter_changes_files(package, dists):
+            package, version, archi = changesfile.split('_')
+            try:
+                yield (dist, archi.replace('.changes', ''),
+                       osp.basename(package), Version(version))
+            except ValueError:
+                self.logger.warning('skip misnamed package %s', changesfile)
 
     def packages_index(self, package=None, dists=None):
         repo1 = {}
-        for dist, archi, package, version in self.iter_changes_files(package, dists):
+        for dist, archi, package, version in self.iter_packages(package, dists):
             repo1.setdefault(package, {}).setdefault(dist, {}).setdefault(archi, set()).add(version)
         return repo1
 

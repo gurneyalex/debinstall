@@ -521,7 +521,7 @@ class Diff(Upload):
         repo1 = repo.packages_index(dists=dists)
         self.logger.debug('**** analyzing repo %s', trepo.ldiname)
         repo2 = {}
-        for dist, archi, package, version in trepo.iter_changes_files(dists=dists):
+        for dist, archi, package, version in trepo.iter_packages(dists=dists):
             repo2[package] = max(repo2.get(package), version)
             try:
                 repo1[package][dist][archi] = [v for v in repo1[package][dist][archi]
@@ -615,7 +615,8 @@ class Archive(Upload):
         ]
 
     def run(self, args):
-        repo = debrepo.DebianRepository(self.logger, _repo_path(self.config, args.pop(0)))
+        repo = debrepo.DebianRepository(
+            self.logger, _repo_path(self.config, args.pop(0)))
         sourcepackage = args.pop(0)
         if self.config.down_to_version is None:
             downtoversion = None
@@ -625,7 +626,7 @@ class Archive(Upload):
             uptoversion = None
         else:
             uptoversion = debrepo.Version(self.config.up_to_version)
-        for dist, archi, package, version in repo.iter_changes_files(package=sourcepackage):
+        for dist, archi, package, version in repo.iter_packages(package=sourcepackage):
             if uptoversion is not None and version > uptoversion:
                 continue
             if downtoversion is not None and version < downtoversion:
@@ -633,6 +634,7 @@ class Archive(Upload):
             repo.archive_package(dist, package, version, archi)
 
 LDI.register(Archive)
+
 
 
 if __name__ == '__main__':
