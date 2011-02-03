@@ -640,6 +640,48 @@ class Archive(Upload):
 LDI.register(Archive)
 
 
+class Check(LDICommand):
+    """Check a repository consistency"""
+    name = "check"
+    min_args = max_args = 1
+    arguments = "<repository>"
+    options = OPTIONS[:2]
+
+    def run(self, args):
+        repo = debrepo.DebianRepository(
+            self.logger, _repo_path(self.config, args.pop(0)))
+        if 'all' in self.config.distributions:
+            dists = None
+        else:
+            dists = self.config.distributions
+        allfiles = set()
+        for dist in os.listdir(repo.dists_directory):
+            if dists and not dist in dists:
+                continue
+            distdir = osp.join(repo.dists_directory, dist)
+            if not osp.isdir(distdir):
+                self.logger.debug('skip non-directory %s', distdir)
+                continue
+            for fname in os.listdir(distdir):
+                if fname.startswith(('Packages', 'Sources', 'Contents', 'Release')):
+                    continue
+                allfiles.add(osp.join(dist, fname))
+        for changesf in repo.iter_changes_files(dists=dists):
+            dist = osp.basename(osp.dirname(changesf))
+            changes = Changes(osp.join(repo.dists_directory, changesf))
+            for fname in changes.get_all_files(False):
+                try:
+                    allfiles.remove(osp.join(dist, osp.basename(fname)))
+                except KeyError:
+                    self.logger.error('package %s reference unexisting file %s',
+                                      changesf, osp.basename(fname))
+        if allfiles:
+            print 'untracked files:'
+            print '\n'.join(sorted(allfiles))
+        else:
+            print 'no untracked files:'
+
+LDI.register(Check)
 
 if __name__ == '__main__':
     run()
