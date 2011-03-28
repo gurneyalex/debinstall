@@ -171,7 +171,8 @@ class Upload(LDICommand):
           'default': False,
           }),
         ('distribution',
-         {'help': 'force a specific target distribution',
+         {'type': 'string', 'short': 'd',
+          'help': 'force a specific target distribution',
           }),
         ]
 
