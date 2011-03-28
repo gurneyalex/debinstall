@@ -513,6 +513,11 @@ class Diff(Upload):
     min_args = max_args = 2
     arguments = "<repository> <target repository>"
     options = OPTIONS[:2] + [
+        ('all',
+         {'action': "store_true", 'short': 'a',
+          'help': 'also propose to upload version prior to already published version',
+          'default': False,
+          }),
         ]
 
     def run(self, args):
@@ -549,6 +554,8 @@ class Diff(Upload):
                     lastversion = None
                     for version in reversed(sorted(missing)):
                         if lastversion is not None and version[:2] == lastversion:
+                            continue
+                        if not self.config.all and repo2version and repo2version > version:
                             continue
                         print '  - %s (%s)' % (version, ', '.join(missing[version])),
                         lastversion = version[:2]
