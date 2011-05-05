@@ -1,6 +1,14 @@
 ChangeLog for debinstall
 ========================
 
+2011-05-05  --  2.4.3
+    * fix --distribution option of 'ldi upload'
+
+    * new --all option to ldi diff: use it to get previous behaviour,
+      now versions older than already published ones are skipped by default
+
+
+
 2011-02-03  --  2.4.2
     * new 'ldi check' command to check repository consistency (eg
       untracked files and files references in .changes but non existant
