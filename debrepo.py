@@ -124,10 +124,7 @@ class DebianRepository(object):
     def __init__(self, logger, directory):
         self.logger = logger
         self.directory = directory
-
-    @property
-    def ldiname(self):
-        return osp.dirname(self.directory)
+        self.ldiname = osp.basename(directory.rstrip(os.sep))
 
     @property
     def aptconf_file(self):
