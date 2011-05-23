@@ -187,12 +187,12 @@ class Upload(LDICommand):
                 distrib = changes['Distribution']
             try:
                 distribdir = repo.check_distrib('incoming', distrib)
+                self._check_signature(changes)
+                self._run_checkers(changes)
             except cli.CommandError, ex:
                 self.logger.error(ex)
-                # drop the current changes file
+                # ignore this changes file
                 continue
-            self._check_signature(changes)
-            self._run_checkers(changes)
             if self.config.remove:
                 move = sht.mv
             else:
@@ -351,8 +351,13 @@ class Publish(Upload):
                 distrib = osp.basename(osp.dirname(filename))
                 destdir = repo.check_distrib('dists', distrib)
                 changes = self._check_changes_file(filename)
-                self._check_signature(changes)
-                self._run_checkers(changes)
+                try:
+                    self._check_signature(changes)
+                    self._run_checkers(changes)
+                except cli.CommandError, ex:
+                    self.logger.error(ex)
+                    # ignore this changes file
+                    continue
                 # perform a copy instead of a move to reset file ownership
                 self.process_changes_file(changes, destdir,
                                           self.config.publish_group, rm=True)
