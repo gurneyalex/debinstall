@@ -367,7 +367,10 @@ class Publish(Upload):
             if self.config.refresh:
                 distribs = ('*',)
             for distrib in distribs:
-                self._apt_refresh(repo, distrib)
+                try:
+                    self._apt_refresh(repo, distrib)
+                except Exception, ex:
+                    self.logger.error(ex)
         finally:
             sht.release_lock(lockfile)
 
