@@ -15,7 +15,7 @@ from debinstall.ldi import LDI
 def _ldi_checker(checker, inputs):
     test = inputs['apycot']
     options = inputs['options'].copy()
-    options['changes-file'] = inputs['changes-file']
+    options['changes-files'] = inputs['changes-files']
     return test.run_checker(checker, options)
 
 def _get_changes_files(checker, repository, type):
@@ -65,7 +65,7 @@ class LdiLogHandler(logging.Handler):
     def emit(self, record):
         emitfunc = getattr(self.writer, record.levelname.lower())
         emitfunc(record.getMessage(), path=self.path)
-        if record.level >= logging.ERROR:
+        if record.levelno >= logging.ERROR:
             self.status = apycot.FAILURE
 
 
@@ -103,8 +103,6 @@ class LdiUploadChecker(BaseChecker):
 
         return true if the test succeeded, else false.
         """
-        # FIXME https://www.logilab.net/elo/ticket/7967
-        os.system('chmod a+rx -R %s ' % osp.dirname(test.deb_packages_dir))
         repository = self.options.get('debian.repository')
         debinstallrc = self.options.get('rc-file')
         self.processed = {}
