@@ -518,9 +518,9 @@ class Diff(Upload):
     packages are considered as stable. If you upload some package, you should
     then run 'ldi publish' on the target repository
     """
-    name = "diff"
+    name = 'diff'
     min_args = max_args = 2
-    arguments = "<repository> <target repository>"
+    arguments = '<repository> <target repository>'
     options = OPTIONS[:2] + [
         ('all',
          {'action': "store_true", 'short': 'a',
@@ -558,8 +558,8 @@ class Diff(Upload):
                         for version in versions:
                             missing.setdefault(version, []).append('%s-%s' % (dist, archi))
                 if missing:
-                    repo2version = repo2.get(package, 'no version released')
-                    print '* %s (%s)' % (package, repo2version)
+                    repo2version = repo2.get(package)
+                    print '* %s (%s)' % (package, repo2version or 'no version released')
                     lastversion = None
                     for version in reversed(sorted(missing)):
                         if lastversion is not None and version[:2] == lastversion:
