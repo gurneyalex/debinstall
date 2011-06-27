@@ -41,7 +41,7 @@ binary-indep: build install
 	dh_testdir
 	dh_testroot
 	dh_install -i
-	dh_pysupport
+	dh_pysupport /var/lib/narval/plugins
 	gzip -9 -c ChangeLog > changelog.gz
 	dh_installchangelogs -i
 	dh_installexamples -i
