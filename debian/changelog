@@ -1,3 +1,9 @@
+debinstall (2.4.4-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Julien Cristau <jcristau@debian.org>  Mon, 27 Jun 2011 10:50:15 +0200
+
 debinstall (2.4.3-1) unstable; urgency=low
 
   * new upstream release
