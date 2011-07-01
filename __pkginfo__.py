@@ -43,4 +43,4 @@ from os.path import join, isdir
 include_dirs = [join('tests', 'data'), join('tests', 'packages')]
 
 if isdir('narval'):
-    data_files = [[join('var', 'lib', 'narval', 'plugins'), [join('narval', 'debinstall.py')]]]
+    data_files = [[join('var', 'lib', 'narval', 'plugins'), [join('narval', 'ldi.py')]]]
