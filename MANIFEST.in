@@ -4,4 +4,4 @@ recursive-include tests/packages *
 include debinstallrc
 include ChangeLog
 include README
-include narval/debinstall.py
+include narval/ldi.py
