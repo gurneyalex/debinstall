@@ -318,7 +318,7 @@ class Publish(Upload):
     arguments = "<repository> [<package.changes>...]"
     options = OPTIONS[1:] + [
         ('check-signature',
-         {'type': 'string', 'group': 'publish',
+         {'type': 'yn', 'group': 'publish',
           'help': 'Check package signature before publish',
           }),
         ('gpg-keyid',
