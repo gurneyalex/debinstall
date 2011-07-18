@@ -23,6 +23,7 @@ def _get_changes_files(checker, repository, type):
     for distrib, changesfiles in getattr(checker, 'debian_changes', {}).iteritems():
         for changesfile in changesfiles:
             result.append(FilePath(path=changesfile, type=type))
+    return result
 
 
 @input('changes-files', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes"',
