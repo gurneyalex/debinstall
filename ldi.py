@@ -530,12 +530,12 @@ class Diff(Upload):
         ]
 
     def run(self, args):
-        if 'all' in self.config.distributions:
-            dists = None
-        else:
-            dists = self.config.distributions
         repo = self._check_repository(_repo_path(self.config, args.pop(0)))
         trepo = self._check_repository(_repo_path(self.config, args.pop(0)))
+        if 'all' in self.config.distributions:
+            dists = os.listdir(trepo.dists_directory)
+        else:
+            dists = self.config.distributions
         self.logger.debug('**** analyzing repo %s', repo.ldiname)
         repo1 = repo.packages_index(dists=dists)
         self.logger.debug('**** analyzing repo %s', trepo.ldiname)
