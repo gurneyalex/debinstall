@@ -199,6 +199,8 @@ class Upload(LDICommand):
                 move = sht.cp
             self.process_changes_file(changes, distribdir,
                                       self.config.upload_group, move)
+        if not self.debian_changes:
+            raise cli.CommandError('No changes file uploaded')
 
     def _check_repository(self, repodir):
         if not osp.isdir(repodir):
