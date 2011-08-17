@@ -37,9 +37,9 @@ def act_ldi_upload(inputs):
                                                 'debian.changes.uploaded')}
 
 
-@input('changes-files', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes"',
+@input('changes-files', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes.uploaded"',
        use=True, list=True)
-@output('changes-files', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes.uploaded"',
+@output('changes-files', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.changes.published"',
         list=True)
 @output('repository', 'isinstance(elmt, FilePath)', 'elmt.type == "debian.repository"')
 @apycot.apycotaction('ldi.publish')
