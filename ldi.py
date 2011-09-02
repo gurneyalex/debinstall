@@ -22,7 +22,7 @@ import shutil
 import os
 import os.path as osp
 from glob import glob
-# from itertools import chain
+from itertools import chain
 
 from logilab.common import clcommands as cli, shellutils as sht
 
@@ -387,130 +387,129 @@ class Publish(Upload):
 LDI.register(Publish)
 
 
-# class List(Upload):
-#     """list all repositories and their distributions"""
-#     name = "list"
-#     min_args = 0
-#     max_args = sys.maxint
-#     arguments = "[repository [-d | --distribution] [package.changes ...]]"
-#     opt_specs = [
-#                  ('-d', '--distribution',
-#                    {'dest': 'distribution',
-#                     'help': 'list a specific target distribution',
-#                    }),
-#                  ('-s', '--section',
-#                    {'dest': 'section',
-#                     'help': "directory that contains the dist nodes ('incoming' or 'dists')",
-#                     'default': 'incoming'
-#                    }),
-#                  ('-o', '--orphaned',
-#                    {'dest': 'orphaned',
-#                     'action': "store_true",
-#                     'default': False,
-#                     'help': 'report orphaned packages or files (can be slow)'
-#                    }),
-#                 ]
+class List(Upload):
+    """list all repositories and their distributions"""
+    name = "list"
+    min_args = 0
+    arguments = "[repository [-d | --distribution <dist>] [package.changes ...]]"
+    options = OPTIONS[1:] + [
+                 ('distribution',
+                   {'dest': 'distribution',
+                    'type': 'string',
+                    'short': 'd',
+                    'help': 'list a specific target distribution',
+                   }),
+                 ('section',
+                   {'dest': 'section',
+                    'type': 'string',
+                    'short': 's',
+                    'help': "directory that contains the dist nodes ('incoming' or 'dists')",
+                    'default': 'incoming',
+                   }),
+                 ('orphaned',
+                   {'dest': 'orphaned',
+                    'short': 'o',
+                    'type': 'yn',
+                    'default': False,
+                    'help': 'report orphaned packages or files (can be slow)'
+                   }),
+                ]
 
-#     def process(self):
-#         if not self.args:
-#             destdir = self.get_config_value('destination')
-#             repositories = self.get_repo_list()
-#             self.logger.info("%s available repositories in '%s'"
-#                              % (len(repositories), destdir))
-#             repositories = sorted([repository for repository in repositories])
-#             print(os.linesep.join(repositories))
-#             return
+    def run(self, args):
+        if not args:
+            destdir = self.config.repositories_directory
+            repositories = []
+            for dirname in os.listdir(destdir):
+                try:
+                    self._check_repository(osp.join(destdir, dirname))
+                except cli.CommandError, e:
+                    self.logger.debug(e)
+                else:
+                    repositories.append(dirname)
+            self.logger.info("%s available repositories in '%s'"
+                             % (len(repositories), destdir))
+            repositories = sorted(repositories)
+            print os.linesep.join(repositories)
+            return
 
-#         repository = self.args[0]
-#         path = self._check_repository(repository, self.options.section)
-#         if len(self.args)==1 and not self.options.distribution:
-#             lines = []
-#             for root, dirs, files in os.walk(path):
-#                 orphaned = list()
-#                 if dirs:
-#                     for d in dirs:
-#                         line = "%s/%s" % (repository, d)
-#                         if osp.islink(osp.join(root, d)):
-#                             line += ' is symlinked to %s' % os.readlink(osp.join(root, d))
-#                         else:
-#                             nb = len(glob(osp.join(root, d, "*.changes")))
-#                             if nb:
-#                                 line += " contains %d changes files" % nb
-#                             else:
-#                                 line += " is empty"
-#                             if self.options.orphaned:
-#                                 orphaned = self.get_orphaned_files(path, d)
-#                                 if orphaned:
-#                                     line += " and %d orphaned files" % len(orphaned)
-#                         lines.append(line)
-#             self.logger.info("%s: %s available distribution(s) in '%s' section"
-#                              % (repository, len(lines), self.options.section))
-#             for line in lines: print line
-#         else:
-#             self._print_changes_files(repository, self.options.section,
-#                                       self.options.distribution)
-#             if self.options.orphaned:
-#                 orphaned = self.get_orphaned_files(path, self.options.distribution)
-#                 if orphaned:
-#                     self.logger.warn("%s: has %s orphaned file(s)"
-#                                      % (repository, len(orphaned)))
-#                     print '\n'.join(orphaned)
+        path = _repo_path(self.config, args.pop(0))
+        repo = self._check_repository(path)
+        if self.config.section not in ('dists', 'incoming'):
+            raise cli.CommandError('Unknown section %s' % self.config.section)
 
-#         if self.options.section == 'incoming':
-#             self.logger.info("use option 'ldi list -s dists %s' to list published content" % repository)
+        if len(args) == 0 and not self.config.distribution:
+            lines = []
+            for root, dirs, files in os.walk(osp.join(path, self.config.section)):
+                orphaned = []
+                for d in dirs:
+                    dirpath = osp.join(root, d)
+                    if osp.islink(dirpath):
+                        line = '%s is symlinked to %s' % (dirpath, os.readlink(dirpath))
+                    else:
+                        nb = len(glob(osp.join(dirpath, "*.changes")))
+                        if nb:
+                            line = "%s contains %d changes files" % (dirpath, nb)
+                        else:
+                            line = "%s is empty" % dirpath
+                        if self.config.orphaned:
+                            orphaned = self.get_orphaned_files(repo, d)
+                            if orphaned:
+                                line += " and %d orphaned files" % len(orphaned)
+                    lines.append(line)
+            self.logger.info("%s: %s available distribution(s) in '%s' section",
+                             path, len(lines), self.config.section)
+            for line in lines:
+                print line
+        else:
+            self._print_changes_files(repo, self.config.section,
+                                      self.config.distribution)
+            if self.config.orphaned:
+                orphaned = self.get_orphaned_files(repo, self.config.distribution)
+                if orphaned:
+                    self.logger.warn("%s: has %s orphaned file(s)",
+                                     path, len(orphaned))
+                    print '\n'.join(orphaned)
 
-#     def _print_changes_files(self, repository, section, distribution):
-#         """print information about a repository and inside changes files"""
-#         filenames = self._find_changes_files(repository, section, distribution)
+    def _print_changes_files(self, repository, section, distribution):
+        """print information about a repository and inside changes files"""
+        if section == 'dists':
+            filenames = repository.dists_changes_files(None, distrib=distribution)
+        else:
+            filenames = repository.incoming_changes_files(None, distrib=distribution)
 
-#         if not filenames:
-#             self.logger.warn("%s/%s: no changes file found" % (repository,
-#                                                                distribution))
-#         else:
-#             self.logger.info("%s/%s: %s available changes files"
-#                              % (repository, distribution, len(filenames)))
-#             filenames = [filename.rsplit('/', 4)[1:] for filename in filenames]
-#             for f in filenames:
-#                 print("%s/%s: %s" % (f[0], f[2], f[-1]))
+        if not filenames:
+            self.logger.warn("%s/%s: no changes file found",
+                             getattr(repository, '%s_directory' % section),
+                             distribution)
+        else:
+            self.logger.info("%s/%s: %s available changes files",
+                             getattr(repository, '%s_directory' % section),
+                             distribution, len(filenames))
+            filenames = [filename.rsplit('/', 4)[1:] for filename in filenames]
+            for f in filenames:
+                print "%s/%s: %s" % (f[0], f[2], f[-1])
 
-#     def get_repo_list(self):
-#         """return list of repository and do some checks"""
-#         destdir = self.get_config_value('destination')
-#         confdir = self.get_config_value('configurations')
+    def get_orphaned_files(self, repository, distrib):
+        import fnmatch
+        if self.config.section == 'dists':
+            changes_files = repository.dists_changes_files(None, distrib=distrib)
+            directory = repository.dists_directory
+        else:
+            changes_files = repository.incoming_changes_files(None, distrib=distrib)
+            directory = repository.incoming_directory
+        tracked_files = (Changes(f).get_all_files(check_if_exists=False)
+                         for f in changes_files if f)
+        tracked_files = set(chain(*tracked_files))
 
-#         repositories = []
-#         for dirname in os.listdir(destdir):
-#             # Some administrators like to keep configuration files
-#             # in the same directory that the whole repositories
-#             if os.path.realpath(os.path.join(destdir, dirname)) == os.path.realpath(confdir):
-#                 self.logger.debug('skipping debinstall configuration directory %s', confdir)
-#                 continue
-#             config = osp.join(confdir, '%s-%s.conf')
-#             for conf in ('apt', 'ldi'):
-#                 conf_file = config % (dirname, conf)
-#                 if not osp.isfile(conf_file):
-#                     self.logger.error('could not find %s', conf_file)
-#                     break
-#             else:
-#                 repositories.append(dirname)
-#         return repositories
+        untracked_files = set(glob(osp.join(directory, distrib, '*')))
+        orphaned_files = untracked_files - tracked_files
+        orphaned_files -= set(fnmatch.filter(orphaned_files, "*/Packages*"))
+        orphaned_files -= set(fnmatch.filter(orphaned_files, "*/Sources*"))
+        orphaned_files -= set(fnmatch.filter(orphaned_files, "*/Contents*"))
+        orphaned_files -= set(fnmatch.filter(orphaned_files, "*/Release*"))
+        return orphaned_files
 
-#     def get_orphaned_files(self, repository, distrib):
-#         import fnmatch
-#         changes_files = (glob(os.path.join(repository, distrib,
-#                                                 '*.changes')))
-#         tracked_files = (Changes(f).get_all_files(check_if_exists=False)
-#                          for f in changes_files if f)
-#         tracked_files = set(tuple(chain(*tracked_files)))
-
-#         untracked_files = set([f for f in glob(os.path.join(repository, distrib, '*'))])
-#         orphaned_files = untracked_files - tracked_files
-#         orphaned_files -= set(fnmatch.filter(orphaned_files, "*/Packages*"))
-#         orphaned_files -= set(fnmatch.filter(orphaned_files, "*/Sources*"))
-#         orphaned_files -= set(fnmatch.filter(orphaned_files, "*/Contents*"))
-#         orphaned_files -= set(fnmatch.filter(orphaned_files, "*/Release*"))
-#         return orphaned_files
-
+LDI.register(List)
 
 class Diff(Upload):
     """Show diffs between files published in a repository and not in another,
