@@ -279,7 +279,7 @@ class Upload(LDICommand):
         return set()
 
     def process_changes_file(self, changes, distribdir, group,
-                             move=sht.cp, rm=False):
+                             move=sht.cp, rm=False, force=False):
         allfiles = changes.get_all_files()
         # Logilab uses trivial Debian repository and put all generated files in
         # the same place. Badly, it occurs some problems in case of several
@@ -295,6 +295,13 @@ class Upload(LDICommand):
             else:
                 move_ = move
             destfile = osp.join(distribdir, osp.basename(filename))
+            if osp.exists(destfile):
+                if not force:
+                    self.logger.error("%s already exists, skipping; use '--force' to overwrite" % destfile)
+                    continue
+                else:
+                    self.logger.warn("%s already exists, but removing anyway as requested" % destfile)
+                    os.unlink(destfile)
             self.logger.debug("%s %s %s", move_.__name__, filename, destfile)
             move_(filename, distribdir)
             if group:
@@ -332,6 +339,10 @@ class Publish(Upload):
           'help': 'refresh the whole repository index files',
           'default': False,
           }),
+        ('force',
+         {'type': 'yn', 'group': 'publish',
+          'help': 'Overwrite destination files if they exist',
+         }),
         ]
 
     def run(self, args):
@@ -362,7 +373,8 @@ class Publish(Upload):
                     continue
                 # perform a copy instead of a move to reset file ownership
                 self.process_changes_file(changes, destdir,
-                                          self.config.publish_group, rm=True)
+                                          self.config.publish_group, rm=True,
+                                          force=self.config.force)
                 # mark distribution to be refreshed at the end
                 distribs.add(distrib)
             repo.generate_aptconf()
