@@ -340,8 +340,12 @@ class Publish(Upload):
           'default': False,
           }),
         ('force',
-         {'type': 'yn', 'group': 'publish',
+         {'action': 'store_true', 'short': 'f', 'group': 'publish',
           'help': 'Overwrite destination files if they exist',
+         }),
+        ('no-confirm',
+         {'action': 'store_true', 'short': 'u', 'group': 'publish',
+          'help': "Don't ask for confirmation before publishing packages",
          }),
         ]
 
@@ -357,6 +361,10 @@ class Publish(Upload):
             if not changes_files and not self.config.refresh:
                 self.logger.error("no changes file to publish in %s",
                                   repo.incoming_directory)
+            if os.isatty(0) and not self.config.no_confirm and changes_files:
+                self.logger.info('Publishing the following changes files:\n%s', '\n'.join(changes_files))
+                if not sht.ASK.confirm('Do you want to proceed?'):
+                    raise cli.CommandError('user abort')
             for filename in changes_files:
                 # distribution name is the same as the incoming directory name
                 # it lets override a valid suite by a more private one (for
