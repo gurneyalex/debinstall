@@ -1,3 +1,4 @@
+import os
 import os.path as osp
 
 from logilab.common.testlib import TestCase, unittest_main
@@ -8,6 +9,8 @@ TESTDIR = osp.abspath(osp.dirname(__file__))
 
 class Changes_TC(TestCase):
     def setUp(self):
+        os.putenv('GNUPGHOME', osp.join(TESTDIR, 'gnupg'))
+
         self.packages_dir = osp.join(TESTDIR,
                                      "packages")
         self.signed = Changes(osp.join(self.packages_dir,
