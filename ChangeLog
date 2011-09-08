@@ -1,6 +1,23 @@
 ChangeLog for debinstall
 ========================
 
+2011-09-08  --  2.5.0
+    * #62664: bring back ldi list
+
+    * #71077: ldi diff should only consider target repo distributions by default
+
+    * #72025: "ldi upload unsigned.changes" should exit non-zero
+
+    * #63984: ldi publish crash if the destination file exist
+
+    * #71032: bad output from narval plugin
+
+    * #63985: add a '-f' option to ldi publish to overwrite destination files
+
+    * #23822: Have a confirmation with the list of packages before publishing
+
+
+
 2011-05-05  --  2.4.3
     * fix --distribution option of 'ldi upload'
 
