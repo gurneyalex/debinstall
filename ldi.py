@@ -67,7 +67,7 @@ OPTIONS = [
 
 
 def run():
-    os.umask(006) # user in same group should be able to overwrite files
+    os.umask(002) # user in same group should be able to overwrite files
     LDI.run(sys.argv[1:])
 
 def _repo_path(config, directory):
