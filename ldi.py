@@ -280,6 +280,9 @@ class Upload(LDICommand):
 
     def process_changes_file(self, changes, distribdir, group,
                              move=sht.cp, rm=False, force=False):
+        if not changes.check_hashes():
+            self.logger.warn("skipping %s, checksum mismatch", changes.path)
+            return
         allfiles = changes.get_all_files()
         # Logilab uses trivial Debian repository and put all generated files in
         # the same place. Badly, it occurs some problems in case of several

@@ -17,6 +17,7 @@
 
 import os.path as osp
 from subprocess import Popen, PIPE
+import hashlib
 
 try:
     from debian import deb822
@@ -38,6 +39,15 @@ def check_sig(filename):
     if status != 0:
         raise BadSignature('%s is not properly signed' % filename)
 
+def hash_file(hashfun, filename):
+    with open(filename, 'rb') as f:
+        hashobj = hashfun()
+        while True:
+            buf = f.read(4096)
+            if buf == '':
+                break
+            hashobj.update(buf)
+        return hashobj.hexdigest()
 
 class Changes(object):
     def __init__(self, path):
@@ -116,3 +126,19 @@ class Changes(object):
                               % (check, self.path, stdout, stderr))
         if errors:
             raise CheckerError('\n'.join(errors))
+
+    def check_hashes(self):
+        for attr, hashfield, hashfun in (
+                ('Checksums-Sha256', 'sha256', hashlib.sha256),
+                ('Checksums-Sha1', 'sha1', hashlib.sha1),
+                ('Files', 'md5sum', hashlib.md5)):
+            try:
+                checksums = self[attr]
+            except KeyError:
+                continue
+            for f in checksums:
+                path = osp.join(osp.dirname(self.path), f['name'])
+                if hash_file(hashfun, path) != f[hashfield]:
+                    return False
+            return True
+        raise Exception('malformed changes files %s, no checksum found' % self.path)
