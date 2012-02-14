@@ -407,6 +407,53 @@ class Publish(Upload):
 LDI.register(Publish)
 
 
+class Incoming(Upload):
+    """check repositories for incoming packages"""
+    name = "incoming"
+    min_args = 0
+    arguments = ""
+    options = OPTIONS[1:] + [
+                 ('verbose',
+                   {'dest': 'verbose',
+                    'action': 'store_true',
+                    'short': 'v',
+                    'default': False,
+                    'help': 'list every changes files',
+                   }), ]
+
+    def run(self, args):
+        repodir = osp.normpath(_repo_path(self.config, '.'))
+        for path in os.listdir(repodir):
+            try:
+                repo = self._check_repository(osp.join(repodir, path))
+            except cli.CommandError:
+                continue
+
+            distribs = set()
+            # we have to launch the publication sequentially
+            lockfile = osp.join(repo.directory, 'ldi.lock')
+            sht.acquire_lock(lockfile, max_try=3, delay=5)
+            self.debian_changes = {}
+            try:
+                changes_files = repo.incoming_changes_files(args)
+                if changes_files:
+                    self.logger.warning('There are incoming packages in %s', path)
+                    if self.config.verbose:
+                        self.logger.debug('The following changes files are ready '
+                                          'to be published:\n%s', '\n'.join(changes_files))
+            finally:
+                sht.release_lock(lockfile)
+
+    def _apt_refresh(self, repo, distrib="*"):
+        for distdir in glob(osp.join(repo.dists_directory, distrib)):
+            if osp.isdir(distdir) and not osp.islink(distdir):
+                repo.dist_publish(osp.basename(distdir))
+                if self.config.gpg_keyid:
+                    self.logger.info('signing release')
+                    repo.sign(distdir, self.config.gpg_keyid)
+
+LDI.register(Incoming)
+
 class List(Upload):
     """list all repositories and their distributions"""
     name = "list"
@@ -602,7 +649,7 @@ class Diff(Upload):
                                 dist, arch = distarch.split('-')
                                 changes = osp.join(repo.directory, 'dists', dist,
                                                    debrepo.changesfile(package, version, arch))
-                                # -C" " to disable checkers, packages are 
+                                # -C" " to disable checkers, packages are
                                 # already in, don't check them agin
                                 os.system('ldi upload -C" " %s %s' % (trepo.directory, changes))
 
