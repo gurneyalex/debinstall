@@ -9,7 +9,7 @@ TESTDIR = osp.abspath(osp.dirname(__file__))
 
 class Changes_TC(TestCase):
     def setUp(self):
-        os.putenv('GNUPGHOME', osp.join(TESTDIR, 'gnupg'))
+        os.environ['GNUPGHOME'] = osp.join(TESTDIR, 'gnupg')
 
         self.packages_dir = osp.join(TESTDIR,
                                      "packages")
