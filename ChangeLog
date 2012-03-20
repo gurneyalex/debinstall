@@ -1,6 +1,14 @@
 ChangeLog for debinstall
 ========================
 
+2012-03-20  --  2.6.0
+    * #88374: should verify checksums before processing changes files
+
+    * #90427: MANIFEST.in file not handled properly by python 2.7
+
+    * #88751 add an "incoming" command
+
+
 2011-09-08  --  2.5.0
     * #62664: bring back ldi list
 
