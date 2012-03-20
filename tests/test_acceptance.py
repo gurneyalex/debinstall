@@ -22,6 +22,7 @@ class LdiLogHandler(logging.Handler):
 HANDLER = LdiLogHandler()
 
 def setUpModule(*args):
+    os.environ['GNUPGHOME'] = osp.join(TESTDIR, 'gnupg')
     data_dir = osp.join(TESTDIR, 'data')
     if not osp.isdir(data_dir):
         os.mkdir(data_dir)
