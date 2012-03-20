@@ -15,6 +15,8 @@
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """helper classes to manipulate debian packages"""
 
+from __future__ import with_statement
+
 import os.path as osp
 from subprocess import Popen, PIPE
 import hashlib
