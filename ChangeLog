@@ -1,6 +1,12 @@
 ChangeLog for debinstall
 ========================
 
+2014-02-11  --  2.7.0
+    * #207560: allow to view list of incoming packages for a given repo
+
+    * #119789 make it possible to configure the header of the generated Release file
+
+
 2012-03-20  --  2.6.0
     * #88374: should verify checksums before processing changes files
 
