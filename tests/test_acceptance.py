@@ -91,7 +91,7 @@ class LdiPublishTC(TestCase):
     tearDown = _tearDown
 
     def test_publish_normal(self):
-        cmd, status = run_command('publish', REPODIR)
+        cmd, status = run_command('publish', '--no-confirm', REPODIR)
         self.assertEqual(status, 0, HANDLER.msgs)
         self.assertEqual(cmd.debian_changes,
                           {'unstable': [osp.join(REPODIR, 'dists/unstable/package1_1.0-1_i386.changes')]})
