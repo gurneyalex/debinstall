@@ -414,7 +414,7 @@ class Incoming(Upload):
     """check repositories for incoming packages"""
     name = "incoming"
     min_args = 0
-    arguments = ""
+    arguments = "[repository ...]"
     options = OPTIONS[1:] + [
                  ('verbose',
                    {'dest': 'verbose',
@@ -425,8 +425,12 @@ class Incoming(Upload):
                    }), ]
 
     def run(self, args):
+        if args:
+            self.config.verbose = True
         repodir = osp.normpath(_repo_path(self.config, '.'))
         for path in os.listdir(repodir):
+            if args and path not in args:
+                continue
             try:
                 repo = self._check_repository(osp.join(repodir, path))
             except cli.CommandError:
@@ -438,7 +442,7 @@ class Incoming(Upload):
             sht.acquire_lock(lockfile, max_try=3, delay=5)
             self.debian_changes = {}
             try:
-                changes_files = repo.incoming_changes_files(args)
+                changes_files = repo.incoming_changes_files([])
                 if changes_files:
                     self.logger.warning('There are incoming packages in %s', path)
                     if self.config.verbose:
