@@ -451,14 +451,6 @@ class Incoming(Upload):
             finally:
                 sht.release_lock(lockfile)
 
-    def _apt_refresh(self, repo, distrib="*"):
-        for distdir in glob(osp.join(repo.dists_directory, distrib)):
-            if osp.isdir(distdir) and not osp.islink(distdir):
-                repo.dist_publish(osp.basename(distdir))
-                if self.config.gpg_keyid:
-                    self.logger.info('signing release')
-                    repo.sign(distdir, self.config.gpg_keyid)
-
 LDI.register(Incoming)
 
 class List(Upload):
