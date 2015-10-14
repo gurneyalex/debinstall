@@ -1,2 +1,3 @@
 debinstallrc etc/
 bin/ldi usr/bin
+usr/lib

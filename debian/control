@@ -2,18 +2,23 @@ Source: debinstall
 Section: python
 Priority: optional
 Maintainer: Logilab S.A. <contact@logilab.fr>
-Uploaders: Alexandre Fayolle <afayolle@debian.org>,
-           Julien Jehannet <julien.jehannet@logilab.fr>
-Build-Depends: debhelper (>= 5.0.38), python (>=2.5), python-support
-XS-Python-Version: >= 2.5
+Build-Depends:
+ debhelper (>= 9),
+ python (>= 2.6.5),
+X-Python-Version: >= 2.6
 Homepage: http://www.logilab.org/project/debinstall
-Standards-Version: 3.8.0
+Standards-Version: 3.9.6
 
 Package: debinstall
 Architecture: all
-Depends: ${python:Depends}, ${misc:Depends}, gnupg, apt-utils, python-debian,
-         lintian, python-logilab-common
-XB-Python-Version: ${python:Versions}
+Depends:
+ ${python:Depends},
+ ${misc:Depends},
+ gnupg,
+ apt-utils,
+ python-debian,
+ lintian,
+ python-logilab-common,
 Description: tool for managing Debian repositories at Logilab
  debinstall provides a tool for managing Debian repositories at
  Logilab. We hope that it will be useful to others.
@@ -25,8 +30,10 @@ Description: tool for managing Debian repositories at Logilab
 
 Package: narval-debinstall
 Architecture: all
-XB-Python-Version: ${python:Versions}
-Depends: ${python:Depends}, cubicweb-apycot, narval-apycot
+Depends:
+ ${python:Depends},
+ cubicweb-apycot,
+ narval-apycot,
 Description: debinstall extensions for apycot
  Provides a basic set of Narval/Apycot actions for Debian repositories
  management.
