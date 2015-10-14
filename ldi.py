@@ -24,6 +24,7 @@ import os.path as osp
 from glob import glob
 from itertools import chain
 
+from lockfile import LockFile
 from logilab.common import clcommands as cli, shellutils as sht
 
 from debinstall.__pkginfo__ import version
@@ -355,11 +356,10 @@ class Publish(Upload):
     def run(self, args):
         repo = self._check_repository(_repo_path(self.config, args.pop(0)))
         distribs = set()
+        self.debian_changes = {}
         # we have to launch the publication sequentially
         lockfile = osp.join(repo.directory, 'ldi.lock')
-        sht.acquire_lock(lockfile, max_try=3, delay=5)
-        self.debian_changes = {}
-        try:
+        with LockFile(lockfile):
             changes_files = repo.incoming_changes_files(args)
             if not changes_files and not self.config.refresh:
                 self.logger.error("no changes file to publish in %s",
@@ -396,8 +396,6 @@ class Publish(Upload):
                     self._apt_refresh(repo, distrib)
                 except Exception, ex:
                     self.logger.error(ex)
-        finally:
-            sht.release_lock(lockfile)
 
     def _apt_refresh(self, repo, distrib="*"):
         for distdir in glob(osp.join(repo.dists_directory, distrib)):
@@ -437,19 +435,16 @@ class Incoming(Upload):
                 continue
 
             distribs = set()
+            self.debian_changes = {}
             # we have to launch the publication sequentially
             lockfile = osp.join(repo.directory, 'ldi.lock')
-            sht.acquire_lock(lockfile, max_try=3, delay=5)
-            self.debian_changes = {}
-            try:
+            with LockFile(lockfile):
                 changes_files = repo.incoming_changes_files([])
                 if changes_files:
                     self.logger.warning('There are incoming packages in %s', path)
                     if self.config.verbose:
                         self.logger.debug('The following changes files are ready '
                                           'to be published:\n%s', '\n'.join(changes_files))
-            finally:
-                sht.release_lock(lockfile)
 
 LDI.register(Incoming)
 
