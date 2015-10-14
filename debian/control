@@ -27,13 +27,3 @@ Description: tool for managing Debian repositories at Logilab
   * check the validity of incoming directory
   * clean up of repositories
   * extract sub-repositories by pulling packages and their dependencies
-
-Package: narval-debinstall
-Architecture: all
-Depends:
- ${python:Depends},
- cubicweb-apycot,
- narval-apycot,
-Description: debinstall extensions for apycot
- Provides a basic set of Narval/Apycot actions for Debian repositories
- management.
