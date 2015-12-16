@@ -99,7 +99,7 @@ class Changes(object):
                 try:
                     fdesc = open(path)
                     fdesc.close()
-                except IOError, ex:
+                except IOError as ex:
                     raise Exception("Cannot read '%s' from %s: %s"
                                     % (info['name'], self.path, ex))
             all_files.add(path)

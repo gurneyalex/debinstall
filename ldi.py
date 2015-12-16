@@ -86,7 +86,7 @@ class LDICommand(cli.Command):
         """safe chmod, log on error"""
         try:
             os.chmod(path, mode)
-        except OSError, ex:
+        except OSError as ex:
             self.logger.error('cant change mode of %s to %s, fix this by '
                               'yourself (%s)', path, mode, ex)
 
@@ -94,7 +94,7 @@ class LDICommand(cli.Command):
         """safe chown, log on error"""
         try:
             sht.chown(path, group=group)
-        except OSError, ex:
+        except OSError as ex:
             self.logger.error('cant change group of %s to %s, fix this by '
                               'yourself (%s)', path, group, ex)
 
@@ -102,7 +102,7 @@ class LDICommand(cli.Command):
         """safe rm, log on error"""
         try:
             sht.rm(path)
-        except OSError, ex:
+        except OSError as ex:
             self.logger.error('cant remove %s, fix this by yourself (%s)',
                               path, ex)
 
@@ -190,7 +190,7 @@ class Upload(LDICommand):
                 distribdir = repo.check_distrib('incoming', distrib)
                 self._check_signature(changes)
                 self._run_checkers(changes)
-            except cli.CommandError, ex:
+            except cli.CommandError as ex:
                 self.logger.error(ex)
                 # ignore this changes file
                 continue
@@ -224,7 +224,7 @@ class Upload(LDICommand):
                 '%s doesn\'t exist or is not a regulary file' % changes_file)
         try:
             return Changes(changes_file)
-        except Exception, ex:
+        except Exception as ex:
             raise cli.CommandError(
                 '%s is not a debian changes file: %s' % (changes_file, ex))
 
@@ -235,7 +235,7 @@ class Upload(LDICommand):
         if self.config.check_signature:
             try:
                 changes.check_sig()
-            except BadSignature, ex:
+            except BadSignature as ex:
                 raise cli.CommandError(
                     "%s. Check if the PGP block exists and if the key is in your "
                     "keyring" % ex)
@@ -244,7 +244,7 @@ class Upload(LDICommand):
         checkers = self.config.checkers
         try:
             changes.run_checkers(checkers)
-        except Exception, ex:
+        except Exception as ex:
             raise cli.CommandError(str(ex))
 
     def _files_to_keep(self, changes):
@@ -378,7 +378,7 @@ class Publish(Upload):
                 try:
                     self._check_signature(changes)
                     self._run_checkers(changes)
-                except cli.CommandError, ex:
+                except cli.CommandError as ex:
                     self.logger.error(ex)
                     # ignore this changes file
                     continue
@@ -394,7 +394,7 @@ class Publish(Upload):
             for distrib in distribs:
                 try:
                     self._apt_refresh(repo, distrib)
-                except Exception, ex:
+                except Exception as ex:
                     self.logger.error(ex)
 
     def _apt_refresh(self, repo, distrib="*"):
@@ -483,7 +483,7 @@ class List(Upload):
             for dirname in os.listdir(destdir):
                 try:
                     self._check_repository(osp.join(destdir, dirname))
-                except cli.CommandError, e:
+                except cli.CommandError as e:
                     self.logger.debug(e)
                 else:
                     repositories.append(dirname)
