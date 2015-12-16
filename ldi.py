@@ -24,7 +24,7 @@ import os.path as osp
 from glob import glob
 from itertools import chain
 
-from lockfile import LockFile
+from lockfile import FileLock
 from logilab.common import clcommands as cli, shellutils as sht
 
 from debinstall.__pkginfo__ import version
@@ -359,7 +359,7 @@ class Publish(Upload):
         self.debian_changes = {}
         # we have to launch the publication sequentially
         lockfile = osp.join(repo.directory, 'ldi.lock')
-        with LockFile(lockfile):
+        with FileLock(lockfile):
             changes_files = repo.incoming_changes_files(args)
             if not changes_files and not self.config.refresh:
                 self.logger.error("no changes file to publish in %s",
@@ -438,7 +438,7 @@ class Incoming(Upload):
             self.debian_changes = {}
             # we have to launch the publication sequentially
             lockfile = osp.join(repo.directory, 'ldi.lock')
-            with LockFile(lockfile):
+            with FileLock(lockfile):
                 changes_files = repo.incoming_changes_files([])
                 if changes_files:
                     self.logger.warning('There are incoming packages in %s', path)
