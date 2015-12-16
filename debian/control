@@ -19,6 +19,7 @@ Depends:
  python-debian,
  lintian,
  python-logilab-common,
+ python-lockfile,
 Description: tool for managing Debian repositories at Logilab
  debinstall provides a tool for managing Debian repositories at
  Logilab. We hope that it will be useful to others.

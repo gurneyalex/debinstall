@@ -25,7 +25,6 @@ description = "tool for managing debian repositories at Logilab"
 author = "Logilab S.A."
 author_email = "contact@logilab.fr"
 web = "http://www.logilab.org/project/%s" % modname
-ftp = "ftp://ftp.logilab.org/pub/%s" % modname
 
 long_desc = """
  debinstall provides the ldi command for managing debian repositories at
@@ -41,6 +40,3 @@ scripts = ['bin/ldi']
 
 from os.path import join, isdir
 include_dirs = [join('tests', 'data'), join('tests', 'packages')]
-
-if isdir('narval'):
-    data_files = [[join('var', 'lib', 'narval', 'plugins'), [join('narval', 'ldi.py')]]]
