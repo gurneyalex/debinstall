@@ -1,6 +1,12 @@
 ChangeLog for debinstall
 ========================
 
+2015-12-16  --  2.8.0
+    * Drop no longer used narval plugin
+
+    * Compatibility with logilab-common 1.1.0.
+
+
 2014-02-11  --  2.7.0
     * #207560: allow to view list of incoming packages for a given repo
 
