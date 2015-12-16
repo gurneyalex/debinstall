@@ -16,6 +16,7 @@
 """The ldi command provides access to various subcommands to manipulate debian
 packages and repositories
 """
+from __future__ import print_function
 
 import sys
 import shutil
@@ -490,7 +491,7 @@ class List(Upload):
             self.logger.info("%s available repositories in '%s'"
                              % (len(repositories), destdir))
             repositories = sorted(repositories)
-            print os.linesep.join(repositories)
+            print(os.linesep.join(repositories))
             return
 
         path = _repo_path(self.config, args.pop(0))
@@ -520,7 +521,7 @@ class List(Upload):
             self.logger.info("%s: %s available distribution(s) in '%s' section",
                              path, len(lines), self.config.section)
             for line in lines:
-                print line
+                print(line)
         else:
             self._print_changes_files(repo, self.config.section,
                                       self.config.distribution)
@@ -529,7 +530,7 @@ class List(Upload):
                 if orphaned:
                     self.logger.warn("%s: has %s orphaned file(s)",
                                      path, len(orphaned))
-                    print '\n'.join(orphaned)
+                    print('\n'.join(orphaned))
 
     def _print_changes_files(self, repository, section, distribution):
         """print information about a repository and inside changes files"""
@@ -548,7 +549,7 @@ class List(Upload):
                              distribution, len(filenames))
             filenames = [filename.rsplit('/', 4)[1:] for filename in filenames]
             for f in filenames:
-                print "%s/%s: %s" % (f[0], f[2], f[-1])
+                print("%s/%s: %s" % (f[0], f[2], f[-1]))
 
     def get_orphaned_files(self, repository, distrib):
         import fnmatch
@@ -611,8 +612,8 @@ class Diff(Upload):
                 self.logger.warning('no package for %s %s %s in %s',
                                     dist, archi, package, repo.ldiname)
         if repo1:
-            print '-'*80
-            print 'packages in %s which are not in %s:' % (repo.ldiname, trepo.ldiname)
+            print('-'*80)
+            print('packages in %s which are not in %s:' % (repo.ldiname, trepo.ldiname))
             for package in sorted(repo1):
                 missing = {}
                 for dist, distinfo in repo1[package].iteritems():
@@ -621,19 +622,19 @@ class Diff(Upload):
                             missing.setdefault(version, []).append('%s-%s' % (dist, archi))
                 if missing:
                     repo2version = repo2.get(package)
-                    print '* %s (%s)' % (package, repo2version or 'no version released')
+                    print('* %s (%s)' % (package, repo2version or 'no version released'))
                     lastversion = None
                     for version in reversed(sorted(missing)):
                         if lastversion is not None and version[:2] == lastversion:
                             continue
                         if not self.config.all and repo2version and repo2version > version:
                             continue
-                        print '  - %s (%s)' % (version, ', '.join(missing[version])),
+                        print('  - %s (%s)' % (version, ', '.join(missing[version])), end=' ')
                         lastversion = version[:2]
                         if repo2version == version:
-                            print 'MISSING DIST / ARCH'
+                            print('MISSING DIST / ARCH')
                         else:
-                            print 'UNRELEASED'
+                            print('UNRELEASED')
                         answer = sht.ASK.ask('upload to %s?' % trepo.ldiname,
                                              ('yes', 'no', 'skip'), 'yes')
                         if answer == 'skip':
@@ -764,14 +765,14 @@ class Check(LDICommand):
                                       osp.join(dist, osp.basename(changesf)),
                                       osp.basename(fname))
         if untrackedfiles:
-            print 'untracked files:'
-            print '\n'.join(sorted(untrackedfiles))
+            print('untracked files:')
+            print('\n'.join(sorted(untrackedfiles)))
             if self.config.archive:
                 for fpath in untrackedfiles:
                     shutil.move(osp.join(repo.dists_directory, fpath),
                                 osp.join(repo.archive_directory, fpath))
         else:
-            print 'no untracked files'
+            print('no untracked files')
 
 LDI.register(Check)
 
