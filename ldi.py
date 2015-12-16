@@ -68,7 +68,7 @@ OPTIONS = [
 
 
 def run():
-    os.umask(002) # user in same group should be able to overwrite files
+    os.umask(0o02) # user in same group should be able to overwrite files
     LDI.run(sys.argv[1:])
 
 def _repo_path(config, directory):
@@ -137,7 +137,7 @@ class Create(LDICommand):
                     os.makedirs(subdir)
                 if group:
                     self.schown(subdir, group=group)
-                self.schmod(subdir, 02775) # sticky group
+                self.schmod(subdir, 0o2775) # sticky group
                 distribdir = osp.join(subdir, distname)
                 if not osp.isdir(distribdir):
                     os.makedirs(distribdir)
@@ -146,7 +146,7 @@ class Create(LDICommand):
                     self.logger.info('%s directory already exists', distribdir)
                     if group:
                         self.schown(distribdir, group=group)
-                    self.schmod(distribdir, 02775) # sticky group
+                    self.schmod(distribdir, 0o2775) # sticky group
                 if group and self.config.update:
                     for fname in os.listdir(distribdir):
                         self.schown(osp.join(distribdir, fname), group=group)
@@ -310,7 +310,7 @@ class Upload(LDICommand):
             move_(filename, distribdir)
             if group:
                 self.schown(destfile, group=group)
-            self.schmod(destfile, 0664)
+            self.schmod(destfile, 0o664)
         if rm:
             tokeep = allfiles
         if tokeep:
