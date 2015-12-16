@@ -3,9 +3,9 @@ import os, os.path as osp
 import shutil
 import logging
 from glob import glob
+import subprocess
 
 from logilab.common.testlib import TestCase, unittest_main
-from logilab.common.shellutils import Execute
 
 from debinstall.ldi import LDI
 
@@ -108,8 +108,10 @@ class LdiPublishTC(TestCase):
         generated = set(os.listdir(unstable))
         self.assertTrue(expected_generated.issubset(generated))
         self.assertSetEqual(generated, expected_published | expected_generated)
-        output = Execute('apt-config dump -c %s' % osp.join(REPODIR, 'apt.conf'))
-        self.assertEqual(output.status, 0, output.err)
+        cmd = subprocess.Popen(['apt-config', 'dump', '-c', osp.join(REPODIR, 'apt.conf')],
+                               stdout=open(os.devnull, 'w'), stderr=subprocess.PIPE)
+        _, err = cmd.communicate()
+        self.assertEqual(cmd.returncode, 0, err)
 
 
 if __name__ == '__main__':
