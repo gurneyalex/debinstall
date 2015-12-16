@@ -146,8 +146,8 @@ class DebianRepository(object):
     def check_distrib(self, section, distrib):
         distribdir = osp.join(self.directory, section, distrib)
         if not osp.isdir(distribdir):
-            raise CommandError(
-                "Distribution %s not found in %s" % (distrib, section))
+            os.mkdir(distribdir)
+            self.logger.info("created %s", distribdir)
         # Print a warning in case of using symbolic distribution names
         distribdir = osp.realpath(distribdir)
         dereferenced = osp.basename(distribdir)
