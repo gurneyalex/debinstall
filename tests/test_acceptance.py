@@ -108,8 +108,9 @@ class LdiPublishTC(TestCase):
         generated = set(os.listdir(unstable))
         self.assertTrue(expected_generated.issubset(generated))
         self.assertSetEqual(generated, expected_published | expected_generated)
-        cmd = subprocess.Popen(['apt-config', 'dump', '-c', osp.join(REPODIR, 'apt.conf')],
-                               stdout=open(os.devnull, 'w'), stderr=subprocess.PIPE)
+        with open(os.devnull, 'w') as null:
+            cmd = subprocess.Popen(['apt-config', 'dump', '-c', osp.join(REPODIR, 'apt.conf')],
+                                   stdout=null, stderr=subprocess.PIPE)
         _, err = cmd.communicate()
         self.assertEqual(cmd.returncode, 0, err)
 
