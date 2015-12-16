@@ -72,7 +72,7 @@ class LdiUploadTC(TestCase):
                     'package1_1.0-1_i386.changes',
                     'package1_1.0.orig.tar.gz',
                     ]
-        self.assertItemsEqual(uploaded, expected)
+        self.assertCountEqual(uploaded, expected)
         self.assertEqual(cmd.debian_changes,
                           {'unstable': [osp.join(REPODIR, 'incoming/unstable/package1_1.0-1_i386.changes')]})
 
