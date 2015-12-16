@@ -46,7 +46,7 @@ def hash_file(hashfun, filename):
         hashobj = hashfun()
         while True:
             buf = f.read(4096)
-            if buf == '':
+            if not buf:
                 break
             hashobj.update(buf)
         return hashobj.hexdigest()
